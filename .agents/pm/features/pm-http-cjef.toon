@@ -1,0 +1,15 @@
+id: pm-http-cjef
+title: Enforce HTTP investigation safety
+description: ""
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-28T23:30:41.622Z"
+updated_at: "2026-10-28T23:32:00.434Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: "Redirect and DNS confinement, private destination declarations, byte/header/time ceilings, cancellation without partial observation and zero uncertain mutation retries; behavioral revert proofs."
+parent: pm-http-76jn
+body: ""

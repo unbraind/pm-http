@@ -1,0 +1,146 @@
+{
+  "name": "pm-http",
+  "version": "2026.10.29",
+  "description": "Task-scoped HTTP investigation evidence, bounded contracts and difference packets",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unbraind/pm-http.git"
+  },
+  "bugs": {
+    "url": "https://github.com/unbraind/pm-http/issues"
+  },
+  "homepage": "https://github.com/unbraind/pm-http#readme",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "manifest.json",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "ARCHITECTURE.md",
+    "docs/real-data.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:test": "tsc -p tsconfig.test.json",
+    "test": "npm run build && npm run build:test && node --test --test-concurrency=2 test/*.test.ts",
+    "test:install": "npm run build && node --test --test-concurrency=2 test/install.acceptance.ts",
+    "prepack": "npm run build",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
+    "check": "npm run typecheck",
+    "docstring": "node scripts/docstring-gate.ts",
+    "lint": "node scripts/lint.ts",
+    "duplication": "node scripts/duplication-gate.ts",
+    "audit:prod": "node --input-type=module -e \"import { spawnSync } from 'node:child_process'; import { npmEnvironment } from './scripts/environment.ts'; const env = npmEnvironment(process.env); const win = process.platform === 'win32'; const r = spawnSync(win ? 'npm.cmd' : 'npm', ['audit', '--omit=dev', '--ignore-scripts'], { stdio: 'inherit', env, shell: win }); process.exit(r.status ?? 1);\"",
+    "pack:dry-run": "npm pack --dry-run",
+    "changelog": "pm-changelog --pm-root .agents/pm --mode prepend --output CHANGELOG.md --release-version-from-package --date-from-version --since-previous-tag --until-release-tag --item-url-base https://github.com/unbraind/pm-http/blob/main/.agents/pm --respect-item-release --status closed,in_progress --pm-bin ./node_modules/.bin/pm --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded --pm-arg=--output-include --pm-arg=full",
+    "changelog:full": "pm-changelog --pm-root .agents/pm --mode replace --output CHANGELOG.md --all-release-tags --release-version-from-package --date-from-version --item-url-base https://github.com/unbraind/pm-http/blob/main/.agents/pm --respect-item-release --status closed,in_progress --pm-bin ./node_modules/.bin/pm --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded --pm-arg=--output-include --pm-arg=full",
+    "changelog:check": "pm-changelog --pm-root .agents/pm --mode replace --output CHANGELOG.md --all-release-tags --release-version-from-package --date-from-version --item-url-base https://github.com/unbraind/pm-http/blob/main/.agents/pm --respect-item-release --status closed,in_progress --check --pm-bin ./node_modules/.bin/pm --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded --pm-arg=--output-include --pm-arg=full",
+    "release:check": "npm run identity:check && npm run typecheck && npm run lint && npm run duplication && npm run build && npm run docstring && npm run coverage && npm run audit:prod && npm run pack:dry-run && npm run changelog:check && npm run verify:release-publish-attestation && npm run test:install",
+    "prepublishOnly": "npm run release:check",
+    "release:notes": "pm-changelog --pm-root .agents/pm --stdout --since-previous-tag --until-release-tag --release-version-from-package --date-from-version --item-url-base https://github.com/unbraind/pm-http/blob/main/.agents/pm --respect-item-release --status closed,in_progress --pm-bin ./node_modules/.bin/pm --github-step-summary --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded --pm-arg=--output-include --pm-arg=full",
+    "prepare": "node scripts/prepare-merge-driver.ts",
+    "merge:install": "pm merge install",
+    "coverage": "npm run build && npm run build:test && node scripts/coverage-gate.ts",
+    "verify:release-publish-attestation": "node scripts/verify-release-publish-attestation.ts",
+    "identity:check": "node scripts/identity-gate.ts",
+    "test:real-data": "npm run build && node test/real-data.acceptance.ts",
+    "test:revert": "node test/revert.acceptance.ts"
+  },
+  "peerDependencies": {
+    "@unbrained/pm-cli": ">=2026.10.28"
+  },
+  "devDependencies": {
+    "@babel/eslint-parser": "8.0.7",
+    "@babel/plugin-syntax-typescript": "8.0.3",
+    "@types/node": "26.6.5",
+    "@unbrained/pm-cli": "2026.10.28",
+    "c8": "^12.0.0",
+    "eslint": "10.13.0",
+    "fast-glob": "3.3.3",
+    "jscpd": "5.4.1",
+    "pm-changelog": "2026.10.19",
+    "pm-ops": "2026.10.19",
+    "typescript": "7.0.2"
+  },
+  "keywords": [
+    "pm-cli",
+    "pm-extension",
+    "http",
+    "context",
+    "agents"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "author": "@unbraind",
+  "pm": {
+    "aliases": [
+      "http"
+    ],
+    "extensions": [
+      "."
+    ],
+    "catalog": {
+      "display_name": "pm-http",
+      "category": "workflow",
+      "summary": "Task-scoped HTTP investigation evidence, bounded contracts and difference packets",
+      "tags": [
+        "http",
+        "context",
+        "agents"
+      ],
+      "links": {
+        "docs": "https://github.com/unbraind/pm-http#readme",
+        "npm": "https://www.npmjs.com/package/pm-http",
+        "repository": "https://github.com/unbraind/pm-http",
+        "report": "https://github.com/unbraind/pm-http/issues"
+      }
+    },
+    "docs": [
+      "README.md",
+      "CHANGELOG.md",
+      "ARCHITECTURE.md"
+    ],
+    "examples": [
+      "README.md"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "coverageGate": {
+    "sources": [
+      "src",
+      "scripts",
+      "index.ts",
+      "eslint.config.ts"
+    ],
+    "tests": [
+      "test/*.test.ts"
+    ],
+    "thresholds": {
+      "statements": 100,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100
+    },
+    "ignore": []
+  },
+  "duplicationGate": {
+    "threshold": 0,
+    "minTokens": 50
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@toon-format/toon": "^4.4.0"
+  }
+}

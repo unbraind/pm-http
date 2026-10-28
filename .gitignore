@@ -1,0 +1,42 @@
+node_modules/
+*.local
+.env
+*.tgz
+RELEASE_NOTES.md
+
+dist-test/
+.agents/pm/locks/
+.agents/pm/runtime/
+
+coverage/
+
+# SDK workspace-transaction journals are runtime state, not tracked data.
+# pm health fails closed on these (tracked_runtime_cache_files), so committing
+# one turns the health gate red; the journal has no value once the transaction
+# has landed. Deliberately outside any `pm-cli:` fence, which the CLI rewrites.
+.agents/pm/transactions/
+
+
+
+# Managed extension distributions are installed locally; version and preview receipts live in docs.
+.agents/pm/extensions/
+
+
+
+dist/
+
+
+
+*.local.*
+
+# Package-manager cache is generated runtime state.
+.npm/
+
+# pm-cli:runtime-cache:start
+.agents/pm/runtime/
+.agents/pm/search/*
+.agents/pm/locks/
+.agents/pm/transactions/
+.agents/pm/checkpoints/
+!.agents/pm/search/eval-queries.json
+# pm-cli:runtime-cache:end

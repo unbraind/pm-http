@@ -1,0 +1,7 @@
+# Public automation and maintainer noreply identities.
+stefan@preu.at
+unbraind@users.noreply.github.com
+1153461+unbraind@users.noreply.github.com
+noreply@github.com
+41898282+github-actions[bot]@users.noreply.github.com
+49699333+dependabot[bot]@users.noreply.github.com

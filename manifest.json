@@ -1,0 +1,14 @@
+{
+  "name": "pm-http",
+  "version": "2026.10.29",
+  "description": "Task-scoped HTTP investigation evidence, bounded contracts and difference packets",
+  "author": "@unbraind",
+  "entry": "./dist/index.js",
+  "pm_min_version": "2026.10.28",
+  "priority": 90,
+  "capabilities": [
+    "commands",
+    "schema",
+    "renderers"
+  ]
+}

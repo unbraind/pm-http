@@ -1,0 +1,15 @@
+id: pm-http-elyh
+title: Capture secret-free historical observations
+description: ""
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-28T23:30:29.149Z"
+updated_at: "2026-10-28T23:31:34.320Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: Real local fixture responses; bounded structural schema and digests; randomized secret placements never appear in tracker history or output.
+parent: pm-http-76jn
+body: ""

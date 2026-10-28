@@ -1,0 +1,2 @@
+/** HTTP investigation extension. */
+export {};

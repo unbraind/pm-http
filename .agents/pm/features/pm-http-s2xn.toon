@@ -1,0 +1,15 @@
+id: pm-http-s2xn
+title: Produce bounded difference packets and missing evidence
+description: ""
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-28T23:30:35.346Z"
+updated_at: "2026-10-28T23:31:49.575Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: First bad versus preceding last good; field differences; exact outstanding requests; both renderer budgets include omission receipts.
+parent: pm-http-76jn
+body: ""
