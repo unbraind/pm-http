@@ -6,11 +6,13 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T23:30:37.952Z"
-updated_at: "2026-10-29T10:22:07.701Z"
+updated_at: "2026-10-29T10:39:52.856Z"
+assignee: codex-agent
+claim_principal: codex-agent
 author: codex-agent
 acceptance_criteria: SDK expected-revision mutations; competing write and crash at every send boundary; stable operation identity converges without duplicate requests or observations.
 parent: pm-http-76jn
-comments[12]{created_at,author,text}:
+comments[14]{created_at,author,text}:
   "2026-10-28T23:41:23.284Z",codex-agent,"Implemented journaled sends with eight deterministic protocol boundaries, stable operation identities and revision-guarded SDK state. Every interrupted possible send converges to stored evidence or explicit uncertainty without replay; two concurrent identities preserve both observations."
   "2026-10-29T00:26:01.227Z",codex-agent,"Independent-process acceptance passed 9/9: distinct writers and shared operation identity, plus SIGKILL at all eight send/record boundaries. Native dead leases recover and stable reruns admit exactly one observation, with at most one request. Logical interleaving and interruption schedules also pass 16/16."
   "2026-10-29T05:42:43.430Z",codex-agent,"PR 1 re-review: close the effect-admission class. Carry caller revision in durable plans, re-read the native item/probe immediately before any send, and refuse stale context. Public SDK limitations #1576 and #1620 leave a documented re-read-to-send window. Reserve sufficient state capacity before effects; concurrent writes must preserve in-flight recording capacity. Search all CLI, SDK, recovery and packed consumer paths; add adversarial no-git fixtures and behavioral revert proofs."
@@ -23,12 +25,15 @@ comments[12]{created_at,author,text}:
   "2026-10-29T09:32:25.921Z",codex-agent,"Full unchanged-threshold npm run passed all 130 tests, but the coverage gate correctly refused 99.77 percent branches: explicit caller guard erasure and preview recovery through the stored revision fallback were not separately exercised. Added assertions using the real persisted planned operation, including both erased guard fields and preview with the caller revision omitted. No production logic or threshold changed. Focused verification and fresh full npm/Bun gates follow."
   "2026-10-29T09:33:17.379Z",codex-agent,Focused planned-preview and guard-erasure regression passed 1/1 with no skipped tests. It verifies omitted caller guards retain the stored policy and explicit guards refuse either erased revision field. The 130-test run already passed every behavior; final gates now remeasure coverage with the added cases.
   "2026-10-29T10:22:07.700Z",codex-agent,"Final source c7967ae passes fresh-home npm release:check 12/12 and Bun release:check 12/12. Each passes 130/130 tests, 2/2 packed npm/npx/bun/bunx non-git consumers, and 100 percent statements/branches/functions/lines over all 20 authored source/tooling files (1398 statements/lines, 106 functions; npm 891 branches, Bun 893). Strict health 10/10, zero warnings/findings; 93 documented declarations; zero duplication and production vulnerabilities; allowlisted archive 47 files. Thirteen new review function-revert scenarios and fourteen retained original safety scenarios are documented above. Pushed PR https://github.com/unbraind/pm-http/pull/1 . Exact-source CI remains queued at https://github.com/unbraind/pm-http/actions/runs/40856378915 and CodeQL at https://github.com/unbraind/pm-http/actions/runs/40856378919 . Cubic is monthly-quota limited, CodeRabbit skipped automatic review, and Sourcery skipped: none constitutes approval. No new review findings; current code-scanning alert list is empty. This final handoff records evidence only; implementation is unchanged. SDK gaps 1399, 1576 and 1620 remain explicit in pm-http-a8z1. All own claims remain released and items unclosed for orchestrator verification."
-files[12]{path,scope}:
+  "2026-10-29T10:34:22.346Z",codex-agent,"Round 2 rule: user-controlled text or an author label is never proof that a context change belongs to this operation. Package-wide search found the prefix exclusion in targetDigest shared by SDK send, planned recovery and preview. Remove all comment exclusions; retain all native comments in the guarded fingerprint. Pre-effect journal writes use SDK state/history without adding task comments, avoiding any exemption. Add property and real non-git recovery/host/packed cases, including forged same-author and exact own-message comments. Legacy weak-fingerprint guarded plans must refuse safely before effects while remaining readable; new operation identity is the remedy. Branch is current with origin/main; no merge needed."
+  "2026-10-29T10:39:52.856Z",codex-agent,"Round 2 reproduced: the new guarded-recovery test fails against 5aeb7f1 because preview accepts a forged operation-prefix withdrawal. Fixed by hashing every comment and binding the digest to operation identity; initial/sending state transitions no longer add comments and remain audited in native SDK history. Focused four-test corpus passes: 128 generated operations with peer/same-author/exact-message comments and text/author/timestamp edits; all four mutation methods; CLI preview/send in JSON and TOON without git; legacy read compatibility and positive unchanged recovery. Two function-only historical reverts passed 2/2: restoring targetDigest from 5aeb7f1 fails the property test, and restoring pre-effect journal comments fails legitimate recovery; fixed source passes after each restoration. No original test or threshold weakened. README and architecture explain legacy safe refusal and retained SDK windows."
+files[13]{path,scope}:
   src/api.ts,project
   src/policy.ts,project
   src/store.ts,project
   src/types.ts,project
   test/admission.test.ts,project
+  test/context-identity.test.ts,project
   test/guard-policy.test.ts,project
   test/helpers.ts,project
   test/install.acceptance.ts,project
@@ -36,7 +41,7 @@ files[12]{path,scope}:
   test/processes.test.ts,project
   test/revert.acceptance.ts,project
   test/state.test.ts,project
-tests[3]:
+tests[4]:
   - command: node --test --test-concurrency=2 test/state.test.ts
     scope: project
     provenance:
@@ -62,6 +67,16 @@ tests[3]:
     provenance:
       author: codex-agent
       created_at: "2026-10-29T09:08:01.804Z"
+      source_kind: local_mutation
+      source_ref: feat/http
+  - command: node --test --test-concurrency=2 test/context-identity.test.ts
+    scope: project
+    timeout_seconds: 900
+    pm_context_mode: none
+    workspace_context_mode: snapshot
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-29T10:39:51.331Z"
       source_kind: local_mutation
       source_ref: feat/http
 docs[2]{path,scope}:

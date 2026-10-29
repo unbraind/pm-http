@@ -17,12 +17,12 @@ function functionBody(source: string, name: string): { start: number; end: numbe
   }
   assert.ok(selected); const { start, end } = selected; assert.ok(typeof start === 'number' && typeof end === 'number'); return { start, end };
 }
-/** Revert exactly the previous send function without duplicating its implementation in a fixture. */
-function historicalSend(): string {
+/** Revert exactly a historical function without duplicating its implementation in a fixture. */
+function historicalBody(name = 'send', revision = '560e3de'): string {
   let source: string;
-  try { source = execFileSync('git', ['show', '560e3de:src/api.ts'], { cwd: repository, env: npmEnvironment(gitEnvironment(process.env)), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); }
+  try { source = execFileSync('git', ['show', revision + ':src/' + (name === 'targetDigest' ? 'store' : 'api') + '.ts'], { cwd: repository, env: npmEnvironment(gitEnvironment(process.env)), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); }
   catch { throw new Error('Historical revert proof needs the package Git history; run it from a source checkout'); }
-  const body = functionBody(source, 'send'); return source.slice(body.start, body.end);
+  const body = functionBody(source, name); return source.slice(body.start, body.end);
 }
 const scenarios = [
   ['mutation-review', 'policy.ts', 'requestFor', 'mutations require separately', (body: string) => body.replace('mutating(probe) && probe.review?.allowMutation !== true', 'false').replace('if (mutating(probe)) requireInput', 'if (false) requireInput')],
@@ -48,10 +48,12 @@ const scenarios = [
   ['review-commit-budget', 'api.ts', 'admitPlan', 'preview and reviewed apply agree', (body: string) => body.replace('capacity({ ...value, revision: value.revision + 1 });', 'capacity(value);')],
   ['review-transition-budget', 'api.ts', 'send', 'preview and reviewed apply agree', (body: string) => body.replace('entry.reservedBytes = RESPONSE_RESERVATION - 1024', 'entry.reservedBytes = RESPONSE_RESERVATION')],
   ['review-policy-frame', 'api.ts', 'assertPlanGuard', 'unguarded sends still refuse', (_body: string) => '{}'],
-  ['review-original-send', 'api.ts', 'send', 'planned recovery cannot rebase', (_body: string) => historicalSend()],
+  ['review-original-send', 'api.ts', 'send', 'planned recovery cannot rebase', (_body: string) => historicalBody()],
   ['review-reservation-integrity', 'api.ts', 'assertPlanGuard', 'own recording reservation', (body: string) => body.replace('phase === 2 && entry.reservedBytes !== RESPONSE_RESERVATION - 1024', 'false')],
   ['review-stored-declarations', 'policy.ts', 'storedProbe', 'stored declarations', (_body: string) => '{ return probe; }'],
   ['review-schema-admission', 'api.ts', 'addProbe', 'declaration capacity refuses', (body: string) => body.replace('capacity({ ...current, revision: current.revision + 1 });', '')],
+  ['review-comment-provenance', 'store.ts', 'targetDigest', 'native context identity includes every comment', (_body: string) => historicalBody('targetDigest', '5aeb7f1')],
+  ['review-comment-journal', 'api.ts', 'send', 'legacy weak-fingerprint', (body: string) => body.replace("    });\n    const plannedTarget", "    }, note('Journaled explicit HTTP send intent'));\n    const plannedTarget").replace("        });\n      } catch (error)", "        }, note('Marked possible HTTP request effect; retries require explicit identity'));\n      } catch (error)")],
 ] as const;
 /** Run one real behavioral test file in a disposable copy, never the reviewed checkout. */
 function run(root: string, pattern: string, file: string) { const outcome = spawnSync(process.execPath, ['--test', '--test-concurrency=2', '--test-name-pattern', pattern, `test/${file}.test.ts`], { cwd: root, env: npmEnvironment(process.env), encoding: 'utf8', timeout: 180000 }); return { status: outcome.status, output: outcome.stdout + outcome.stderr }; }
@@ -63,7 +65,7 @@ try {
     const target = join(root, 'src', file); const source = readFileSync(target, 'utf8'); const selected = functionBody(source, functionName); const begin = selected.start; const end = selected.end;
     const body = source.slice(begin, end); const replaced = mutation(body); assert.notEqual(body, replaced);
     writeFileSync(target, source.slice(0, begin) + replaced + source.slice(end));
-    const suite = ['review-policy-frame', 'review-original-send', 'review-reservation-integrity', 'review-stored-declarations', 'review-schema-admission'].includes(name) ? 'guard-policy' : name.startsWith('review-') ? 'admission' : name === 'host-error-privacy' ? 'commands' : name === 'inert-rendering' || name === 'conditional-record' ? 'models' : 'http'; const outcome = run(root, pattern, suite); assert.equal(outcome.status, 1, `${name} must fail by assertion, not timeout or crash`);
+    const suite = name.startsWith('review-comment-') ? 'context-identity' : ['review-policy-frame', 'review-original-send', 'review-reservation-integrity', 'review-stored-declarations', 'review-schema-admission'].includes(name) ? 'guard-policy' : name.startsWith('review-') ? 'admission' : name === 'host-error-privacy' ? 'commands' : name === 'inert-rendering' || name === 'conditional-record' ? 'models' : 'http'; const outcome = run(root, pattern, suite); assert.equal(outcome.status, 1, `${name} must fail by assertion, not timeout or crash`);
     writeFileSync(target, source); const restored = run(root, pattern, suite); assert.equal(restored.status, 0, `${name} fixed behavior must pass after restoration: ${restored.output}`);
     console.log(`${name}: safety removal fails; restored implementation passes`);
   }

@@ -13,10 +13,10 @@ export const RESPONSE_RESERVATION = 131072;
 export function assertRevision(actual: number, expected: number | undefined): void {
   if (expected !== undefined && actual !== expected) throw new HttpError('conflict', 'Expected HTTP revision changed', 'Read current context and declare a new operation with that revision', { reason: 'stale_revision' });
 }
-/** Preserve native task content across recovery, excluding this operation's own audited writes. */
+/** Bind all native task content and comments to one operation without trusting text as ownership. */
 export function targetDigest(item: GetResult['item'], operation: string): string {
   const { http_state: _state, updated_at: _updated, collection_counts: _counts, comments, ...content } = item;
-  return digest({ ...content, comments: (comments ?? []).filter(comment => !comment.text.startsWith(`HTTP operation ${operation}: `)) });
+  return digest({ operation, item: { ...content, comments: comments ?? [] } });
 }
 /** Enforce UTF-8 state capacity and recording slots, including every in-flight reservation. */
 export function capacity(value: State): void {
@@ -73,7 +73,7 @@ export class Store {
     } finally { pending.resolve(); if (queues.get(identity) === tail) queues.delete(identity); }
   }
   /** Freshly read each target and merge cooperating writes; native atomic preconditions remain an SDK gap. */
-  async change(id: string, change: (value: State) => boolean | Promise<boolean>, comment: string, references?: string[]): Promise<State> {
+  async change(id: string, change: (value: State) => boolean | Promise<boolean>, comment?: string, references?: string[]): Promise<State> {
     this.writable();
     return this.locked(`state:${id}`, async () => {
       const snapshot = await this.read(id); const before = JSON.stringify(snapshot.value);
@@ -83,7 +83,7 @@ export class Store {
       value.revision++;
       capacity(value);
       try {
-        await commitItemMutations({ pmRoot: this.options.workspace, author: await this.author(), transactionId: `http-${randomUUID()}`, lockWaitMs: 10000, onTransition: this.options.onTransition, mutations: [{ op: 'update', id: snapshot.id, match: snapshot.item.http_state === undefined ? { key: 'updated_at', value: snapshot.item.updated_at } : { key: 'http_state', value: snapshot.item.http_state }, options: { httpState: JSON.stringify(value), comment: [comment], doc: references } }] });
+        await commitItemMutations({ pmRoot: this.options.workspace, author: await this.author(), transactionId: `http-${randomUUID()}`, lockWaitMs: 10000, onTransition: this.options.onTransition, mutations: [{ op: 'update', id: snapshot.id, match: snapshot.item.http_state === undefined ? { key: 'updated_at', value: snapshot.item.updated_at } : { key: 'http_state', value: snapshot.item.http_state }, options: { httpState: JSON.stringify(value), comment: comment === undefined ? undefined : [comment], doc: references } }] });
       } catch { throw new HttpError('conflict', 'Conditional HTTP context write did not complete', 'Read the current target and recover using the same operation identity'); }
       return value;
     });

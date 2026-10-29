@@ -61,7 +61,7 @@ export async function send(item: string, name: string, options: Options): Promis
   admitPlan(structuredClone(initial.value), probe, id, options.expectedRevision, targetDigest(initial.item, id));
   // Invocation guards survive in the journal; subsequent writes merge only within their admission policy.
   const journal = new Store({ ...options, expectedRevision: undefined });
-  /** Identify only this operation's own comments when checking durable native-source identity. */
+  /** Label post-effect audit comments for human readers, never for ownership or guard exemptions. */
   const note = (text: string): string => `HTTP operation ${id}: ${text}`;
   /** Expose each complete protocol step to deterministic competing-writer and crash tests. */
   const step = async (point: Step): Promise<void> => { await options.boundary?.(point); };
@@ -79,7 +79,7 @@ export async function send(item: string, name: string, options: Options): Promis
       if (plan !== undefined) return admitPlan(value, probe, id, options.expectedRevision, targetDigest(initial.item, id));
       if (options.expectedRevision !== undefined && digest((await journal.read(initial.id)).item) !== digest(initial.item)) throw new HttpError('conflict', 'Native target changed before plan admission', 'Read current context and declare a new operation', { reason: 'stale_revision' });
       return admitPlan(value, probe, id, options.expectedRevision, targetDigest(initial.item, id));
-    }, note('Journaled explicit HTTP send intent'));
+    });
     const plannedTarget = await journal.read(initial.id);
     await step('planned');
     const plan = current.plans.find(entry => entry.id === id)!;
@@ -99,7 +99,7 @@ export async function send(item: string, name: string, options: Options): Promis
             entry.guardRevision = callerRevision + 2;
           }
           entry.stage = 'sending'; entry.reservedBytes = RESPONSE_RESERVATION - 1024; return true;
-        }, note('Marked possible HTTP request effect; retries require explicit identity'));
+        });
       } catch (error) {
         if (error instanceof HttpError && error.details.reason === 'stale_revision') await cancel();
         throw error;

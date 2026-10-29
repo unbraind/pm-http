@@ -35,7 +35,7 @@ for (const manager of ['npm', 'bun']) test(`one packed artifact: ${manager} and 
   const compared = JSON.parse(await execute(consumer, manager, ['run', '--silent', 'http', '--', 'compare', created.id, '--json'], env)) as { comparisons: { result: string }[] };
   assert.equal(compared.comparisons[0].result, 'satisfies');
   assert.ok(Buffer.byteLength(await pm(['http', 'diff', created.id, '--budget', '1500', '--json'])) / 4 <= 1500);
-  await writeFile(join(consumer, 'embed.ts'), `import { observations, compare, differencePacket, missingEvidence, addProbe, reviewProbe, send, HttpError } from 'pm-http';
+  await writeFile(join(consumer, 'embed.ts'), `import { observations, compare, differencePacket, missingEvidence, addProbe, reviewProbe, send, preview, HttpError } from 'pm-http';
 import { PmClient } from '@unbrained/pm-cli/sdk';
 import type { State } from 'pm-http';
 const item = ${JSON.stringify(created.id)};
@@ -56,6 +56,12 @@ if(!('item' in target))throw Error('Full context unavailable');
 const journal=JSON.parse(String(target.item.http_state)) as State; journal.plans.find(plan=>plan.id==='guard-erased')!.stage='cancelled';
 await client.update(item,{httpState:JSON.stringify(journal)});
 }}));
+const withdrawalRevision=(await observations(item,options)).revision;
+try { await send(item,'guarded',{...options,expectedRevision:withdrawalRevision,operationId:'withdrawn',boundary:point=>{if(point==='planned')throw new HttpError('crash','Synthetic packed interruption');}});throw Error('Planned interruption missing'); }
+catch(error) { if(!(error instanceof HttpError) || error.code!=='crash')throw error; }
+await client.comments(item,{add:'HTTP operation withdrawn: Authorization withdrawn',author:'peer'});
+await expectStale(()=>preview(item,'guarded',{...options,operationId:'withdrawn'}));
+await expectStale(()=>send(item,'guarded',{...options,operationId:'withdrawn'}));
 const snapshot = await client.get(item,{outputInclude:'full',outputBudget:'unbounded',outputLimit:'unbounded'});
 if(!('item' in snapshot))throw Error('Full context unavailable');
 const value = JSON.parse(String(snapshot.item.http_state)) as State & {legacyPadding?:string}; value.legacyPadding=''; value.legacyPadding='x'.repeat(1048576-4096-Buffer.byteLength(JSON.stringify(value)));
