@@ -22,11 +22,16 @@ const scenarios = [
   ['observation-deduplication', 'api.ts', 'send', 'crash at complete', (body: string) => body.replace("if (existing !== undefined) { requireInput(digest(existing) === digest(final), 'Observation identity already has different evidence'); return false; }", '')],
   ['crash-recovery', 'api.ts', 'send', 'crash at sending', (body: string) => body.replace("if (plan.stage === 'sending') observation = uncertain", 'if (false) observation = uncertain')],
   ['host-error-privacy', 'commands.ts', 'expected', 'literal secrets', (body: string) => body.replace(", recovery: { attempted_command: 'pm http [arguments omitted]', normalized_args: [], provided_fields: [] }", '')],
+  ['review-capacity', 'store.ts', 'capacity', 'response admission reserves', (_body: string) => '{}'],
+  ['review-revision-admission', 'api.ts', 'send', 'guarded sends retain', (body: string) => body.replaceAll('admitPlan(value, probe, id, options.expectedRevision,', 'admitPlan(value, probe, id, undefined,').replace('if (options.expectedRevision !== undefined && digest', 'if (false && digest')],
+  ['review-revision-send', 'api.ts', 'send', 'guarded sends retain', (body: string) => body.replace('if (guard.expectedRevision !== undefined)', 'if (false)')],
+  ['review-json-family', 'capture.ts', 'jsonMediaType', 'JSON media-family detection', (_body: string) => '{ return false; }'],
+  ['review-shape-budget', 'capture.ts', 'bodyShape', 'capacity counts pending slots', (body: string) => body.replaceAll('if (nodes >= 256) { incomplete = true; break; }', '')],
 ] as const;
 /** Run one real behavioral test file in a disposable copy, never the reviewed checkout. */
 function run(root: string, pattern: string, file: string) { const outcome = spawnSync(process.execPath, ['--test', '--test-concurrency=2', '--test-name-pattern', pattern, `test/${file}.test.ts`], { cwd: root, env: npmEnvironment(process.env), encoding: 'utf8', timeout: 180000 }); return { status: outcome.status, output: outcome.stdout + outcome.stderr }; }
 try {
-  const selectedScenarios = process.argv[2] === undefined ? scenarios : scenarios.filter(([name]) => name === process.argv[2]);
+  const selectedScenarios = process.argv[2] === undefined ? scenarios : scenarios.filter(([name]) => process.argv.slice(2).includes(name));
   assert.ok(selectedScenarios.length > 0, 'Requested revert scenario must exist');
   for (const [name, file, functionName, pattern, mutation] of selectedScenarios) {
     const root = join(scratch, name); for (const path of ['src', 'test', 'index.ts', 'package.json']) cpSync(join(repository, path), join(root, path), { recursive: true }); symlinkSync(join(repository, 'node_modules'), join(root, 'node_modules'), 'dir');
@@ -40,7 +45,7 @@ try {
     assert.ok(selected); const begin = selected.start!; const end = selected.end!;
     const body = source.slice(begin, end); const replaced = mutation(body); assert.notEqual(body, replaced);
     writeFileSync(target, source.slice(0, begin) + replaced + source.slice(end));
-    const suite = name === 'host-error-privacy' ? 'commands' : name === 'inert-rendering' || name === 'conditional-record' ? 'models' : 'http'; const outcome = run(root, pattern, suite); assert.equal(outcome.status, 1, `${name} must fail by assertion, not timeout or crash`);
+    const suite = name.startsWith('review-') ? 'admission' : name === 'host-error-privacy' ? 'commands' : name === 'inert-rendering' || name === 'conditional-record' ? 'models' : 'http'; const outcome = run(root, pattern, suite); assert.equal(outcome.status, 1, `${name} must fail by assertion, not timeout or crash`);
     writeFileSync(target, source); const restored = run(root, pattern, suite); assert.equal(restored.status, 0, `${name} fixed behavior must pass after restoration: ${restored.output}`);
     console.log(`${name}: safety removal fails; restored implementation passes`);
   }

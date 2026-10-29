@@ -19,7 +19,7 @@ assert.ok(packed[0].files.every(file => /^(dist\/|manifest\.json$|package\.json$
 const tarball = join(root, packed[0].filename); const hash = createHash('sha256').update(await readFile(tarball)).digest('hex');
 
 for (const manager of ['npm', 'bun']) test(`one packed artifact: ${manager} and ${manager === 'npm' ? 'npx' : 'bunx'} no-git investigation`, async t => {
-  const s = await server(t, (_req, res) => { res.writeHead(200, { 'content-type': 'application/json' }); res.end('{"ok":true}'); });
+  let calls = 0; const s = await server(t, (_req, res) => { calls++; res.writeHead(200, { 'content-type': 'application/vnd.api+json' }); res.end('{"ok":true}'); });
   const consumer = join(root, manager); await mkdir(consumer); const env = { ...clean, PM_PATH: join(consumer, '.agents', 'pm') };
   await writeFile(join(consumer, 'package.json'), JSON.stringify({ name: 'http-packed-fixture', private: true, type: 'module', dependencies: { 'pm-http': `file:${tarball}`, '@unbrained/pm-cli': '2026.10.28' }, scripts: { http: 'pm http' } }));
   await execute(consumer, manager, ['install', '--ignore-scripts'], env);
@@ -30,11 +30,34 @@ for (const manager of ['npm', 'bun']) test(`one packed artifact: ${manager} and 
   const created = JSON.parse(await pm(['create', 'Task', 'Packed API investigation', '--json'])) as { id: string };
   await pm(['http', 'probe', 'add', created.id, 'api', '--url', s.url, '--boundary', s.url]);
   await pm(['http', 'send', created.id, 'api', '--operation', 'packed']);
-  await pm(['http', 'contract', 'set', created.id, 'api', '--status', '200']);
+  await writeFile(join(consumer, 'shape.json'), '{"type":"object","properties":{"ok":{"type":"boolean"}}}');
+  await pm(['http', 'contract', 'set', created.id, 'api', '--status', '200', '--json-shape', 'shape.json']);
   const compared = JSON.parse(await execute(consumer, manager, ['run', '--silent', 'http', '--', 'compare', created.id, '--json'], env)) as { comparisons: { result: string }[] };
   assert.equal(compared.comparisons[0].result, 'satisfies');
   assert.ok(Buffer.byteLength(await pm(['http', 'diff', created.id, '--budget', '1500', '--json'])) / 4 <= 1500);
-  await writeFile(join(consumer, 'embed.ts'), `import { observations, compare, differencePacket, missingEvidence } from 'pm-http';\nconst item = ${JSON.stringify(created.id)};\nconst options = { workspace: process.env.PM_PATH! };\nif ((await observations(item, options)).observations.length !== 1 || (await compare(item, options)).comparisons[0].result !== 'satisfies' || (await differencePacket(item, options)).estimatedTokens > 1500 || (await missingEvidence(item, options)).missing.length !== 0) throw Error('SDK acceptance failed');\nconsole.log('SDK accepted');\n`);
+  await writeFile(join(consumer, 'embed.ts'), `import { observations, compare, differencePacket, missingEvidence, addProbe, reviewProbe, send, HttpError } from 'pm-http';
+import { PmClient } from '@unbrained/pm-cli/sdk';
+const item = ${JSON.stringify(created.id)};
+const options = { workspace: process.env.PM_PATH! };
+if ((await observations(item, options)).observations.length !== 1 || (await compare(item, options)).comparisons[0].result !== 'satisfies' || (await differencePacket(item, options)).estimatedTokens > 1500 || (await missingEvidence(item, options)).missing.length !== 0) throw Error('SDK acceptance failed');
+const url = ${JSON.stringify(s.url)};
+await addProbe(item, 'guarded', {url,boundary:url,method:'POST'}, options);
+await reviewProbe(item, 'guarded', 'Reviewed packed synthetic fixture', options);
+const client = new PmClient({pmRoot:options.workspace,noExtensions:true});
+const expectedRevision = (await observations(item, options)).revision;
+let refused = false;
+try { await send(item, 'guarded', {...options,expectedRevision,operationId:'guarded',boundary:async point=>{if(point==='sending')await client.update(item,{title:'Competing packed context'});}}); }
+catch(error) { if(!(error instanceof HttpError) || error.details.reason!=='stale_revision')throw error; refused=true; }
+if(!refused)throw Error('Stale packed request was sent');
+const snapshot = await client.get(item,{outputInclude:'full',outputBudget:'unbounded',outputLimit:'unbounded'});
+const value = JSON.parse(String(snapshot.item.http_state)); value.legacyPadding=''; value.legacyPadding='x'.repeat(1048576-4096-Buffer.byteLength(JSON.stringify(value)));
+await client.update(item,{httpState:JSON.stringify(value)});
+try { await send(item,'api',{...options,operationId:'capacity'});throw Error('Capacity refusal missing'); }
+catch(error) { if(!(error instanceof HttpError) || error.code!=='capacity')throw error; }
+console.log('SDK accepted');
+`);
   assert.match(await execute(consumer, manager === 'npm' ? process.execPath : 'bun', ['embed.ts'], env), /SDK accepted/);
+  for (const format of [[], ['--json']]) for (const mode of [[], ['--dry-run']]) await assert.rejects(pm(['http', 'send', created.id, 'api', '--operation', 'cli-capacity', ...mode, ...format]), error => { const output = error as { stdout: string; stderr: string }; assert.match(output.stdout + output.stderr, /capacity/); return true; });
+  assert.equal(calls, 1);
   assert.equal(createHash('sha256').update(await readFile(tarball)).digest('hex'), hash);
 });

@@ -6,20 +6,45 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T23:30:37.952Z"
-updated_at: "2026-10-29T02:12:49.914Z"
+updated_at: "2026-10-29T06:11:25.499Z"
+assignee: codex-agent
+claim_principal: codex-agent
 author: codex-agent
 acceptance_criteria: SDK expected-revision mutations; competing write and crash at every send boundary; stable operation identity converges without duplicate requests or observations.
 parent: pm-http-76jn
-comments[2]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-10-28T23:41:23.284Z",codex-agent,"Implemented journaled sends with eight deterministic protocol boundaries, stable operation identities and revision-guarded SDK state. Every interrupted possible send converges to stored evidence or explicit uncertainty without replay; two concurrent identities preserve both observations."
   "2026-10-29T00:26:01.227Z",codex-agent,"Independent-process acceptance passed 9/9: distinct writers and shared operation identity, plus SIGKILL at all eight send/record boundaries. Native dead leases recover and stable reruns admit exactly one observation, with at most one request. Logical interleaving and interruption schedules also pass 16/16."
-files[4]{path,scope}:
+  "2026-10-29T05:42:43.430Z",codex-agent,"PR 1 re-review: close the effect-admission class. Carry caller revision in durable plans, re-read the native item/probe immediately before any send, and refuse stale context. Public SDK limitations #1576 and #1620 leave a documented re-read-to-send window. Reserve sufficient state capacity before effects; concurrent writes must preserve in-flight recording capacity. Search all CLI, SDK, recovery and packed consumer paths; add adversarial no-git fixtures and behavioral revert proofs."
+  "2026-10-29T06:11:25.499Z",codex-agent,"Focused results: admission corpus passed 6/6, plus the post-commit native-writer race passed 1/1; existing mutation/redaction/contention checks passed 3/3. Guarded planned recovery succeeds unchanged, refuses stale native comments, and retains the original caller revision. Legacy unreserved plans upgrade capacity before effects. Typecheck, ESLint, zero-duplication and docstring checks passed. Final source verification and behavioral revert proofs continue."
+files[9]{path,scope}:
+  src/api.ts,project
   src/store.ts,project
+  src/types.ts,project
+  test/admission.test.ts,project
+  test/install.acceptance.ts,project
   test/models.test.ts,project
   test/processes.test.ts,project
+  test/revert.acceptance.ts,project
   test/state.test.ts,project
-tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
-  node --test --test-concurrency=2 test/state.test.ts,project,codex-agent,"2026-10-29T00:03:17.761Z",local_mutation,feat/http
+tests[2]:
+  - command: node --test --test-concurrency=2 test/state.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-29T00:03:17.761Z"
+      source_kind: local_mutation
+      source_ref: feat/http
+  - command: node --test --test-concurrency=2 test/admission.test.ts
+    scope: project
+    timeout_seconds: 600
+    pm_context_mode: none
+    workspace_context_mode: snapshot
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-29T06:04:57.240Z"
+      source_kind: local_mutation
+      source_ref: feat/http
 docs[2]{path,scope}:
   ARCHITECTURE.md,project
   README.md,project

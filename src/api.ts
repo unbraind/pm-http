@@ -3,11 +3,24 @@ import { contractShape } from './capture.ts';
 import { digest, HttpError, label, requireInput, bound } from './core.ts';
 import { makeProbe, requestFor } from './policy.ts';
 import { capture, uncertain } from './transport.ts';
-import { Store } from './store.ts';
-import type { Contract, Observation, Options, ProbeInput, State, Step } from './types.ts';
+import { Store, assertRevision, capacity, targetDigest, RESPONSE_RESERVATION } from './store.ts';
+import type { Contract, Observation, Options, Probe, ProbeInput, State, Step } from './types.ts';
 
 /** Locate a canonical probe with prototype-safe lookup. */
 export function probeFrom(value: State, name: string) { const probe = value.probes.find(entry => entry.name === label(name)); if (probe === undefined) throw new HttpError('probe_missing', 'Declared probe does not exist', 'Run pm http probe add for this task'); return probe; }
+/** Share operation identity, guard and recording-capacity admission between preview and apply. */
+export function admitPlan(value: State, probe: Probe, id: string, expectedRevision: number | undefined, sourceDigest: string): boolean {
+  requireInput(/^[a-zA-Z0-9_-]{1,64}$/.test(id), 'Operation identity must be a short identifier');
+  const previous = value.plans.find(entry => entry.id === id);
+  if (previous !== undefined) {
+    requireInput(previous.probeDigest === digest(probe) && previous.probe === probe.name, 'Operation already belongs to another declaration');
+    if (expectedRevision !== undefined) assertRevision(expectedRevision, previous.expectedRevision ?? -1);
+    return false;
+  }
+  assertRevision(value.revision, expectedRevision);
+  value.plans.push({ id, probe: probe.name, probeDigest: digest(probe), stage: 'planned', reservedBytes: RESPONSE_RESERVATION, ...(expectedRevision === undefined ? {} : { expectedRevision, guardRevision: value.revision + 1, targetDigest: sourceDigest }) });
+  capacity(value); return true;
+}
 /** Declare an immutable request bound to an existing native task. */
 export async function addProbe(item: string, name: string, input: ProbeInput, options: Options) {
   const probe = makeProbe(name, input); const store = new Store(options);
@@ -25,17 +38,19 @@ export async function reviewProbe(item: string, name: string, reason: string, op
 export async function listProbes(item: string, options: Options) { const { value } = await new Store(options).read(item); return { revision: value.revision, probes: value.probes, receipt: { complete: true, omitted: 0 } }; }
 /** Preview the same request planner used by send, without resolving credentials or writing. */
 export async function preview(item: string, name: string, options: Options) {
-  const { value } = await new Store(options).read(item); const probe = probeFrom(value, name); const request = requestFor(probe, false);
+  const { value, item: target } = await new Store(options).read(item); const probe = probeFrom(value, name); const request = requestFor(probe, false);
+  const operation = options.operationId ?? randomUUID(); admitPlan(structuredClone(value), probe, operation, options.expectedRevision, targetDigest(target, operation));
   return { operation: options.operationId, revision: value.revision, method: probe.method, url: request.url.href, headers: request.headers, body: probe.body, boundary: probe.boundary, maxBytes: probe.maxBytes, timeoutMs: probe.timeoutMs, credentials: 'environment names only' };
 }
 /** Send using a durable intent; uncertain interrupted sends converge without replaying the request. */
 export async function send(item: string, name: string, options: Options): Promise<{ observation: Observation; operation: string }> {
   const store = new Store(options); store.writable(); const id = options.operationId ?? randomUUID();
-  requireInput(/^[a-zA-Z0-9_-]{1,64}$/.test(id), 'Operation identity must be a short identifier');
   const initial = await store.read(item); const probe = probeFrom(initial.value, name); requestFor(probe, false);
-  if (options.expectedRevision !== undefined && initial.value.revision !== options.expectedRevision) throw new HttpError('conflict', 'Expected HTTP revision changed', 'Read current context before sending');
-  // The invocation revision is checked above; each journal step re-reads and CASes the current state.
+  admitPlan(structuredClone(initial.value), probe, id, options.expectedRevision, targetDigest(initial.item, id));
+  // Invocation guards survive in the journal; subsequent writes merge only within their admission policy.
   const journal = new Store({ ...options, expectedRevision: undefined });
+  /** Identify only this operation's own comments when checking durable native-source identity. */
+  const note = (text: string): string => `HTTP operation ${id}: ${text}`;
   /** Expose each complete protocol step to deterministic competing-writer and crash tests. */
   const step = async (point: Step): Promise<void> => { await options.boundary?.(point); };
   /** Revalidate the immutable declaration in every journal mutation, including recovery. */
@@ -43,11 +58,13 @@ export async function send(item: string, name: string, options: Options): Promis
   await step('validated');
   return journal.locked(`send:${initial.id}:${id}`, async () => {
     await step('plan-ready');
-    let current = await journal.change(initial.id, value => {
+    let current = await journal.change(initial.id, async value => {
       validate(value); const plan = value.plans.find(entry => entry.id === id);
-      if (plan !== undefined) { requireInput(plan.probeDigest === digest(probe) && plan.probe === probe.name, 'Operation already belongs to another declaration'); return false; }
-      value.plans.push({ id, probe: probe.name, probeDigest: digest(probe), stage: 'planned' }); return true;
-    }, 'Journaled explicit HTTP send intent');
+      if (plan !== undefined) return admitPlan(value, probe, id, options.expectedRevision, targetDigest(initial.item, id));
+      if (options.expectedRevision !== undefined && digest((await journal.read(initial.id)).item) !== digest(initial.item)) throw new HttpError('conflict', 'Native target changed before plan admission', 'Read current context and declare a new operation', { reason: 'stale_revision' });
+      return admitPlan(value, probe, id, options.expectedRevision, targetDigest(initial.item, id));
+    }, note('Journaled explicit HTTP send intent'));
+    const plannedTarget = await journal.read(initial.id);
     await step('planned');
     const plan = current.plans.find(entry => entry.id === id)!;
     if (plan.stage === 'cancelled') throw new HttpError('cancelled', 'Operation was cancelled or refused without an observation', 'Inspect the refusal and use a new operation identity');
@@ -56,11 +73,34 @@ export async function send(item: string, name: string, options: Options): Promis
     if (plan.stage === 'planned') {
       // Validate environment availability before marking a possible remote effect.
       requestFor(probe, true);
-      current = await journal.change(initial.id, value => { validate(value); value.plans.find(entry => entry.id === id)!.stage = 'sending'; return true; }, 'Marked possible HTTP request effect; retries require explicit identity');
+      try {
+        current = await journal.change(initial.id, async value => {
+          validate(value); const entry = value.plans.find(entry => entry.id === id)!;
+          if (entry.expectedRevision !== undefined) {
+            assertRevision(value.revision, entry.guardRevision);
+            const target = (await journal.read(initial.id)).item;
+            if (digest(target) !== digest(plannedTarget.item) || targetDigest(target, id) !== entry.targetDigest) throw new HttpError('conflict', 'Native target changed after planning', 'Read current context and declare a new operation', { reason: 'stale_revision' });
+            entry.guardRevision = value.revision + 1;
+          }
+          entry.stage = 'sending'; entry.reservedBytes = RESPONSE_RESERVATION; return true;
+        }, note('Marked possible HTTP request effect; retries require explicit identity'));
+      } catch (error) {
+        if (error instanceof HttpError && error.details.reason === 'stale_revision') await journal.change(initial.id, value => { const entry = value.plans.find(entry => entry.id === id)!; entry.stage = 'cancelled'; delete entry.reservedBytes; return true; }, note('Refused stale send before network effects'));
+        throw error;
+      }
+      const readyTarget = await journal.read(initial.id);
       await step('sending');
-      try { observation = await capture(id, probe, options.signal); }
-      catch (error) { await journal.change(initial.id, value => { validate(value); value.plans.find(entry => entry.id === id)!.stage = 'cancelled'; return true; }, 'HTTP send cancelled or refused; no partial observation'); throw error; }
-      await journal.change(initial.id, value => { validate(value); const entry = value.plans.find(entry => entry.id === id)!; entry.stage = 'received'; entry.observation = observation; return true; }, 'Journaled complete secret-free HTTP result');
+      try {
+        const fresh = await journal.read(initial.id); validate(fresh.value); capacity(fresh.value);
+        const guard = fresh.value.plans.find(entry => entry.id === id)!;
+        if (guard.expectedRevision !== undefined) {
+          assertRevision(fresh.value.revision, guard.guardRevision);
+          if (digest(fresh.item) !== digest(readyTarget.item) || digest(fresh.value) !== digest(current) || targetDigest(fresh.item, id) !== guard.targetDigest) throw new HttpError('conflict', 'Native target changed immediately before send', 'Read current context and declare a new operation', { reason: 'stale_revision' });
+        }
+        observation = await capture(id, probe, options.signal);
+      }
+      catch (error) { await journal.change(initial.id, value => { validate(value); const entry = value.plans.find(entry => entry.id === id)!; entry.stage = 'cancelled'; delete entry.reservedBytes; return true; }, note('HTTP send cancelled or refused; no partial observation')); throw error; }
+      await journal.change(initial.id, value => { validate(value); const entry = value.plans.find(entry => entry.id === id)!; entry.stage = 'received'; entry.observation = observation; delete entry.reservedBytes; return true; }, note('Journaled complete secret-free HTTP result'));
     }
     await step('received'); await step('record-ready');
     requireInput(observation !== undefined, 'Send journal has no recoverable result');
@@ -68,8 +108,8 @@ export async function send(item: string, name: string, options: Options): Promis
     await journal.change(initial.id, value => {
       validate(value); const existing = value.observations.find(entry => entry.id === id);
       if (existing !== undefined) { requireInput(digest(existing) === digest(final), 'Observation identity already has different evidence'); return false; }
-      value.observations.push(final); const entry = value.plans.find(entry => entry.id === id)!; entry.stage = 'recorded'; delete entry.observation; return true;
-    }, 'Recorded historical HTTP observation; no present health assertion');
+      value.observations.push(final); const entry = value.plans.find(entry => entry.id === id)!; entry.stage = 'recorded'; delete entry.observation; delete entry.reservedBytes; return true;
+    }, note('Recorded historical HTTP observation; no present health assertion'));
     await step('recorded'); await step('complete'); return { observation: final, operation: id };
   });
 }

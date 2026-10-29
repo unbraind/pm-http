@@ -6,15 +6,21 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T23:30:29.149Z"
-updated_at: "2026-10-29T02:12:37.795Z"
+updated_at: "2026-10-29T06:03:44.939Z"
+assignee: codex-agent
+claim_principal: codex-agent
 author: codex-agent
 acceptance_criteria: Real local fixture responses; bounded structural schema and digests; randomized secret placements never appear in tracker history or output.
 parent: pm-http-76jn
-comments[1]{created_at,author,text}:
+comments[2]{created_at,author,text}:
   "2026-10-29T02:12:25.679Z",codex-agent,"JSON shape capture now uses a separately bounded canonical media type even when the displayed header selection omits Content-Type; application/problem+json and the public GitHub JSON type are admitted. A header-cap fixture proves missing media evidence is reported as incomplete. Focused ceiling, timeout-after-write and shape tests passed 3/3."
-files[2]{path,scope}:
+  "2026-10-29T05:42:49.533Z",codex-agent,"PR 1 re-review: separate safe media-type display from bounded JSON-family detection so arbitrary valid application/*+json media types retain structure while their raw subtype and parameters stay redacted. Audit headers, transport, comparisons and both renderers, with generated MIME fixtures and packed consumers."
+files[5]{path,scope}:
   src/capture.ts,project
+  src/transport.ts,project
+  test/admission.test.ts,project
   test/http.test.ts,project
+  test/install.acceptance.ts,project
 tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=2 test/http.test.ts,project,codex-agent,"2026-10-29T00:03:02.631Z",local_mutation,feat/http
 docs[2]{path,scope}:

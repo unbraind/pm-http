@@ -7,14 +7,19 @@ export function bodyShape(value: unknown): { shape: Shape; incomplete: boolean }
   let nodes = 0; let incomplete = false;
   /** Hash keys and discard every scalar response value. */
   function walk(entry: unknown, depth: number): Shape {
-    if (++nodes > 256 || depth > 12) { incomplete = true; return { type: 'omitted' }; }
+    nodes++; if (depth > 12) { incomplete = true; return { type: 'omitted' }; }
     if (entry === null) return { type: 'null' };
-    if (Array.isArray(entry)) { const shapes = entry.slice(0, 64).map(item => walk(item, depth + 1)); if (entry.length > 64) incomplete = true; return { type: 'array', items: [...new Map(shapes.map(shape => [JSON.stringify(shape), shape])).values()].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b), 'en')) }; }
-    if (typeof entry === 'object') { if (Object.keys(entry).length > 64) incomplete = true; return { type: 'object', properties: Object.fromEntries(Object.entries(entry).slice(0, 64).map(([key, content]) => [digest(key), walk(content, depth + 1)]).sort(([a], [b]) => String(a).localeCompare(String(b), 'en'))) }; }
+    if (Array.isArray(entry)) { const shapes: Shape[] = []; for (const item of entry.slice(0, 64)) { if (nodes >= 256) { incomplete = true; break; } shapes.push(walk(item, depth + 1)); } if (entry.length > 64) incomplete = true; return { type: 'array', items: [...new Map(shapes.map(shape => [JSON.stringify(shape), shape])).values()].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b), 'en')) }; }
+    if (typeof entry === 'object') { const properties: Record<string, Shape> = {}; if (Object.keys(entry).length > 64) incomplete = true; for (const [key, content] of Object.entries(entry).slice(0, 64)) { if (nodes >= 256) { incomplete = true; break; } properties[digest(key)] = walk(content, depth + 1); } return { type: 'object', properties: Object.fromEntries(Object.entries(properties).sort(([a], [b]) => a.localeCompare(b, 'en'))) }; }
     return { type: typeof entry };
   }
   const shape = walk(value, 0);
   return { shape, incomplete };
+}
+/** Detect JSON semantics within the header count cap without exposing arbitrary media tokens. */
+export function jsonMediaType(raw: string[], max: number): boolean | undefined {
+  for (let index = 0; index < Math.min(raw.length, max * 2); index += 2) if (raw[index].toLowerCase() === 'content-type') return /^application\/(?:json|[!#$%&'*+.^_`|~0-9a-z-]+\+json)$/i.test(raw[index + 1].split(';')[0].trim());
+  return undefined;
 }
 /** Compile the supported JSON-schema subset without retaining source strings. All properties are required. */
 export function contractShape(value: unknown, depth = 0): Shape {

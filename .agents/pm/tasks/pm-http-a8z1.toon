@@ -4,10 +4,12 @@ description: "Public CommitItemMutationsOptions and CommitWorkspaceTransactionOp
 type: Task
 status: open
 priority: 2
-tags[3]: "gh:unbraind/pm-cli#1399",sdk-gap,"upstream:pm-cli#1399"
+tags[7]: "gh:unbraind/pm-cli#1399","gh:unbraind/pm-cli#1576","gh:unbraind/pm-cli#1620",sdk-gap,"upstream:pm-cli#1399","upstream:pm-cli#1576","upstream:pm-cli#1620"
 created_at: "2026-10-28T23:41:25.429Z"
-updated_at: "2026-10-29T00:25:51.080Z"
+updated_at: "2026-10-29T05:59:59.163Z"
 author: codex-agent
 acceptance_criteria: "Adopt the public backend-owned conditional writer when released, then run the same concurrency and crash conformance suite against it."
 parent: pm-http-76jn
+comments[1]{created_at,author,text}:
+  "2026-10-29T05:59:49.861Z",codex-agent,"Related public SDK constraints confirmed in the pinned declarations and orchestrator notes: BulkItemUpdateMutation.match is keyed selection, not an item expected-revision precondition (#1576); workspace transactions do not exclude ordinary native writers (#1620). Package guards re-read before effects and preserve caller revision/native-source digest through recovery, but the re-read-to-send window remains. Cooperating package writers preserve response reservations; arbitrary native writers can ignore them."
 body: ""

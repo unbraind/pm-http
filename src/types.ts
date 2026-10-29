@@ -25,7 +25,7 @@ export interface Observation {
   retry: { automaticRetries: 0; safeToRepeat: boolean; reason: string };
 }
 /** Durable send intent, including the exact revision-bound declaration digest. */
-export interface Plan { id: string; probe: string; probeDigest: string; stage: 'planned' | 'sending' | 'received' | 'recorded' | 'cancelled'; observation?: Observation; }
+export interface Plan { id: string; probe: string; probeDigest: string; stage: 'planned' | 'sending' | 'received' | 'recorded' | 'cancelled'; observation?: Observation; expectedRevision?: number; guardRevision?: number; targetDigest?: string; reservedBytes?: number; }
 /** Native task extension envelope. Every change increments revision. */
 export interface State { version: 1; revision: number; probes: Probe[]; contracts: Contract[]; observations: Observation[]; plans: Plan[]; }
 /** Public deterministic send/record boundaries used for fault injection. */

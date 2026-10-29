@@ -1,7 +1,7 @@
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { performance } from 'node:perf_hooks';
-import { bodyDigest, bodyShape, captureHeaders } from './capture.ts';
+import { bodyDigest, bodyShape, captureHeaders, jsonMediaType } from './capture.ts';
 import { HttpError, digest } from './core.ts';
 import { destination, mutating, parseUrl, requestFor, within } from './policy.ts';
 import type { Resolver } from './policy.ts';
@@ -61,10 +61,10 @@ export async function capture(id: string, probe: Probe, caller?: AbortSignal, re
         redirects.push(digest(next.href)); url = next; continue;
       }
       const selected = captureHeaders(response.raw, [...probe.responseHeaders, 'content-type'], probe.maxHeaders, request.secrets);
-      const contentType = selected.headers['content-type'];
+      const json = jsonMediaType(response.raw, probe.maxHeaders);
       if (!probe.responseHeaders.includes('content-type')) delete selected.headers['content-type'];
-      let shape; let shapeIncomplete = response.truncated || contentType === undefined && selected.omitted > 0;
-      if (!response.truncated && response.bytes.length > 0 && (contentType === 'application/json' || contentType?.endsWith('+json'))) {
+      let shape; let shapeIncomplete = response.truncated || json === undefined && selected.omitted > 0;
+      if (!response.truncated && response.bytes.length > 0 && json === true) {
         try { const result = bodyShape(JSON.parse(response.bytes.toString('utf8'))); shape = result.shape; shapeIncomplete = result.incomplete; } catch { shapeIncomplete = true; }
       }
       timing.total = performance.now() - started;
