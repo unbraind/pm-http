@@ -62,8 +62,8 @@
     "eslint": "10.13.0",
     "fast-glob": "3.3.3",
     "jscpd": "5.4.2",
-    "pm-changelog": "2026.10.19",
-    "pm-ops": "2026.10.19",
+    "pm-changelog": "2026.10.26",
+    "pm-ops": "2026.10.26",
     "typescript": "7.0.2"
   },
   "keywords": [
