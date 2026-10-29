@@ -6,10 +6,16 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T23:30:35.346Z"
-updated_at: "2026-10-28T23:31:49.575Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-29T02:12:45.359Z"
 author: codex-agent
 acceptance_criteria: First bad versus preceding last good; field differences; exact outstanding requests; both renderer budgets include omission receipts.
 parent: pm-http-76jn
+files[2]{path,scope}:
+  src/derive.ts,project
+  test/http.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/http.test.ts,project,codex-agent,"2026-10-29T00:03:14.675Z",local_mutation,feat/http
+docs[2]{path,scope}:
+  ARCHITECTURE.md,project
+  README.md,project
 body: ""

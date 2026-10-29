@@ -6,10 +6,47 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T23:30:41.622Z"
-updated_at: "2026-10-28T23:32:00.434Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-29T12:26:58.137Z"
 author: codex-agent
 acceptance_criteria: "Redirect and DNS confinement, private destination declarations, byte/header/time ceilings, cancellation without partial observation and zero uncertain mutation retries; behavioral revert proofs."
 parent: pm-http-76jn
+comments[7]{created_at,author,text}:
+  "2026-10-29T02:12:27.890Z",codex-agent,"Behavioral revert evidence: npm run test:revert completed the original 13 scenarios; npm run test:revert -- host-error-privacy completed the fourteenth. Each safety removal failed by assertion in a disposable copy and the restored implementation passed. Native literal-secret CLI refusal output is covered. No reviewed checkout mutation was used."
+  "2026-10-29T05:59:42.540Z",codex-agent,"Whole-package review audit: all effects pass through the shared send API; previews now share operation/revision/capacity admission. Capacity includes pending observation slots and UTF-8 bytes across every Store.change writer. JSON-family classification is independent of display redaction and renderer. The CodeQL fixture warning came from intentionally echoing synthetic request authorization; the fixture now echoes only its locally generated value and separately asserts the received authorization matches, preserving and strengthening the no-secret persistence test. No additional review findings were listed in the available re-review packet."
+  "2026-10-29T06:36:11.792Z",codex-agent,"General rule: recording resources and effect preconditions must be admitted before network effects on every method, including previews and legacy recovery. All Store writers preserve pending bytes, observation slots and revision transition headroom. A 1 KiB transition allowance prevents false acceptance at exact byte limits; globally bounded shape allocation keeps results below the reserved record ceiling. Adversarial native-writer, Unicode, fanout, revision rollover, capacity boundary and lease refusal fixtures passed. Existing mutation, random-secret and contention checks passed 3/3."
+  "2026-10-29T11:36:29.369Z",codex-agent,"Round 3 rule: every admitted asynchronous transport phase must settle exactly once on every terminal event, timeout and caller cancellation, release its resources, and allow the send lease to finish. Audit the shared HTTP/HTTPS request lifecycle, response lifecycle and DNS cancellation; cover upgrades, premature closes, timeout/cancellation races, reviewed mutations, no-git host output and packed consumers. Branch is current with origin/main. Add real local wire fixtures and function-only revert proofs without weakening tests or gates."
+  "2026-10-29T11:56:57.163Z",codex-agent,"Round 3 reproduced against 04babaa: a real 101 wire response keeps capture pending beyond its deadline and the bounded assertion fails. Closed the terminal-event class in the shared HTTP/HTTPS path: exactly-once response/failure settlement, explicit abort settlement, premature request/response close handling, and detached upgrade/tunnel socket destruction. A 101 delivered through the ordinary response callback is handled too; Bun reports code UnrequestedUpgrade instead of an upgrade event, so only that structured code is normalized without reading its raw message. Unknown outcomes retain available timing and never retry automatically. Five focused tests pass: 28 method/wire upgrade cases, incomplete/informational/streaming phases, cancellation, reviewed SDK mutation replay and send-lock release, both host renderers without git, and verified HTTPS. Two function-only revert proofs pass 2/2: reverting capture to 04babaa causes the deadline assertion failure; removing request and socket destruction fails the real socket-release assertion. Fixed source passes after each restoration. All existing assertions and thresholds remain intact."
+  "2026-10-29T12:01:23.809Z",codex-agent,"Round 3 focused verification complete: tracker-linked lifecycle suite passes 5/5 in an isolated snapshot at 53dd077. Packed npm/npx and bun/bunx journeys pass 2/2, including reviewed upgrade uncertainty, stable operation replay, both renderers and no additional request. Historical capture-function and transport-resource removal proofs pass 2/2 with assertion failures when protections are removed and restored passes. Typecheck, ESLint, zero duplication and all 94 documented declarations pass. The Node ordinary-response 101 path and Bun structured UnrequestedUpgrade path are both covered without raw diagnostic output. Full unchanged-threshold npm and Bun release gates now run serially after this evidence commit. No new SDK gap; existing backend/native-writer limits remain documented."
+  "2026-10-29T12:26:58.136Z",codex-agent,"Round 3 final source e80d0e8 passes fresh-home npm release:check 12/12 and Bun release:check 12/12. Each passes 139/139 tests, 2/2 packed npm/npx/bun/bunx no-git journeys and 100 percent statements/branches/functions/lines across all 20 source/tooling files (1413 statements/lines, 109 functions, 914 branches). All 94 declarations documented; zero lint issues, duplication and production vulnerabilities; package allowlist 47 files. Tracker-linked lifecycle tests pass 5/5, new function-only revert proofs pass 2/2, strict tracker health passes 10/10 with zero warnings/findings, native histories retain main prefixes and own claim is released. PR https://github.com/unbraind/pm-http/pull/1 is pushed. Exact-source Node 22/26 CI is queued at https://github.com/unbraind/pm-http/actions/runs/40872914107 and CodeQL at https://github.com/unbraind/pm-http/actions/runs/40872914079 . Cubic neutral and Sourcery skipped provide no approval; current code-scanning alert list is empty. The protocol-upgrade blocker is fixed across ordinary/error/upgrade channels, deadlines, cancellation, SDK leases, both host renderers, verified TLS and packed consumers. This handoff appends evidence only; implementation remains e80d0e8. Existing SDK gaps 1399, 1576 and 1620 remain documented; no new SDK gap. Items remain unclosed for orchestrator verification."
+files[9]{path,scope}:
+  src/policy.ts,project
+  src/transport.ts,project
+  test/admission.test.ts,project
+  test/http.test.ts,project
+  test/install.acceptance.ts,project
+  test/lifecycle.test.ts,project
+  test/revert.acceptance.ts,project
+  test/transport.test.ts,project
+  test/wire-fixture.ts,project
+tests[2]:
+  - command: node --test --test-concurrency=2 test/transport.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-29T00:03:22.416Z"
+      source_kind: local_mutation
+      source_ref: feat/http
+  - command: node --test --test-concurrency=2 test/lifecycle.test.ts
+    scope: project
+    timeout_seconds: 900
+    pm_context_mode: none
+    workspace_context_mode: snapshot
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-29T11:56:54.140Z"
+      source_kind: local_mutation
+      source_ref: feat/http
+docs[2]{path,scope}:
+  ARCHITECTURE.md,project
+  README.md,project
 body: ""

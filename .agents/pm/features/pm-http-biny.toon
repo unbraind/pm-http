@@ -6,10 +6,18 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T23:30:31.668Z"
-updated_at: "2026-10-28T23:31:42.475Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-29T02:12:41.355Z"
 author: codex-agent
 acceptance_criteria: "Status, required headers, JSON structural types and latency; incomplete evidence remains unknown."
 parent: pm-http-76jn
+comments[1]{created_at,author,text}:
+  "2026-10-29T00:26:05.846Z",codex-agent,"Contract verdicts retain definitive status, latency or fully captured field violations even when other capture evidence is incomplete. Missing or capped headers never become invented absences. Focused contract and legacy-review cases passed 3/3."
+files[2]{path,scope}:
+  src/derive.ts,project
+  test/models.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/models.test.ts,project,codex-agent,"2026-10-29T00:03:10.245Z",local_mutation,feat/http
+docs[2]{path,scope}:
+  ARCHITECTURE.md,project
+  README.md,project
 body: ""

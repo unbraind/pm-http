@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "@babel/eslint-parser": "8.0.7",
+    "@babel/parser": "8.0.8",
     "@babel/plugin-syntax-typescript": "8.0.3",
     "@types/node": "26.6.5",
     "@unbrained/pm-cli": "2026.10.28",

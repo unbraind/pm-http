@@ -7,7 +7,7 @@ export function gitEnvironment(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 
 /** Remove all npm policy/config variants before setting one isolated user config. */
 export function npmEnvironment(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  return { ...Object.fromEntries(Object.entries(env).filter(([key]) => !/^npm_config_(allow_scripts|userconfig)$/i.test(key))), npm_config_userconfig: devNull };
+  return { ...Object.fromEntries(Object.entries(env).filter(([key]) => !/^npm_config_(allow_scripts|userconfig)$/i.test(key) && !/(?:TOKEN|SECRET|PASSWORD|CREDENTIAL|API_KEY|NPM_MEDIA_SERVER)/i.test(key))), npm_config_userconfig: devNull };
 }
 
 /** Clear inherited test-runner context without losing subprocess coverage instrumentation. */
