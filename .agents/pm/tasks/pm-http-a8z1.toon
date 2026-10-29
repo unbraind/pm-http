@@ -1,0 +1,13 @@
+id: pm-http-a8z1
+title: Track backend-owned conditional mutation capability
+description: "Public CommitItemMutationsOptions and CommitWorkspaceTransactionOptions require pmRoot:string; ExtensionCommandSdk has no backend-owned conditional item mutation service. Upstream issue #1399 remains open. Remote reads use injected PmClient; writes and sends refuse before effects until the host offers this capability."
+type: Task
+status: open
+priority: 2
+tags[3]: "gh:unbraind/pm-cli#1399",sdk-gap,"upstream:pm-cli#1399"
+created_at: "2026-10-28T23:41:25.429Z"
+updated_at: "2026-10-29T00:25:51.080Z"
+author: codex-agent
+acceptance_criteria: "Adopt the public backend-owned conditional writer when released, then run the same concurrency and crash conformance suite against it."
+parent: pm-http-76jn
+body: ""

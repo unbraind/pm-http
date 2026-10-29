@@ -6,10 +6,18 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T23:30:29.149Z"
-updated_at: "2026-10-28T23:31:34.320Z"
+updated_at: "2026-10-29T00:03:02.771Z"
 assignee: codex-agent
 claim_principal: codex-agent
 author: codex-agent
 acceptance_criteria: Real local fixture responses; bounded structural schema and digests; randomized secret placements never appear in tracker history or output.
 parent: pm-http-76jn
+files[2]{path,scope}:
+  src/capture.ts,project
+  test/http.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/http.test.ts,project,codex-agent,"2026-10-29T00:03:02.631Z",local_mutation,feat/http
+docs[2]{path,scope}:
+  ARCHITECTURE.md,project
+  README.md,project
 body: ""

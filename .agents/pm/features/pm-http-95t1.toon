@@ -6,10 +6,23 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T23:30:37.952Z"
-updated_at: "2026-10-28T23:31:55.130Z"
+updated_at: "2026-10-29T00:26:01.230Z"
 assignee: codex-agent
 claim_principal: codex-agent
 author: codex-agent
 acceptance_criteria: SDK expected-revision mutations; competing write and crash at every send boundary; stable operation identity converges without duplicate requests or observations.
 parent: pm-http-76jn
+comments[2]{created_at,author,text}:
+  "2026-10-28T23:41:23.284Z",codex-agent,"Implemented journaled sends with eight deterministic protocol boundaries, stable operation identities and revision-guarded SDK state. Every interrupted possible send converges to stored evidence or explicit uncertainty without replay; two concurrent identities preserve both observations."
+  "2026-10-29T00:26:01.227Z",codex-agent,"Independent-process acceptance passed 9/9: distinct writers and shared operation identity, plus SIGKILL at all eight send/record boundaries. Native dead leases recover and stable reruns admit exactly one observation, with at most one request. Logical interleaving and interruption schedules also pass 16/16."
+files[4]{path,scope}:
+  src/store.ts,project
+  test/models.test.ts,project
+  test/processes.test.ts,project
+  test/state.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/state.test.ts,project,codex-agent,"2026-10-29T00:03:17.761Z",local_mutation,feat/http
+docs[2]{path,scope}:
+  ARCHITECTURE.md,project
+  README.md,project
 body: ""
