@@ -6,8 +6,10 @@ import { devNull, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { test, after } from 'node:test';
+import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
 import { npmEnvironment, gitEnvironment } from '../scripts/environment.ts';
 import { server } from './helpers.ts';
+import { wireServer } from './wire-fixture.ts';
 
 const root = await mkdtemp(join(tmpdir(), 'http-packed-')); after(() => rm(root, { recursive: true, force: true }));
 const repository = resolve(import.meta.dirname, '..');
@@ -20,6 +22,7 @@ const tarball = join(root, packed[0].filename); const hash = createHash('sha256'
 
 for (const manager of ['npm', 'bun']) test(`one packed artifact: ${manager} and ${manager === 'npm' ? 'npx' : 'bunx'} no-git investigation`, async t => {
   let calls = 0; const s = await server(t, (_req, res) => { calls++; res.writeHead(200, { 'content-type': 'application/vnd.api+json' }); res.end('{"ok":true}'); });
+  const upgrade = await wireServer(t);
   const consumer = join(root, manager); await mkdir(consumer); const env = { ...clean, PM_PATH: join(consumer, '.agents', 'pm') };
   await writeFile(join(consumer, 'package.json'), JSON.stringify({ name: 'http-packed-fixture', private: true, type: 'module', dependencies: { 'pm-http': `file:${tarball}`, '@unbrained/pm-cli': '2026.10.28' }, scripts: { http: 'pm http' } }));
   await execute(consumer, manager, ['install', '--ignore-scripts'], env);
@@ -62,6 +65,11 @@ catch(error) { if(!(error instanceof HttpError) || error.code!=='crash')throw er
 await client.comments(item,{add:'HTTP operation withdrawn: Authorization withdrawn',author:'peer'});
 await expectStale(()=>preview(item,'guarded',{...options,operationId:'withdrawn'}));
 await expectStale(()=>send(item,'guarded',{...options,operationId:'withdrawn'}));
+await addProbe(item,'upgrade',{url:${JSON.stringify(upgrade.url + '/idle')},boundary:${JSON.stringify(upgrade.url)},method:'POST',timeoutMs:250},options);
+await reviewProbe(item,'upgrade','Reviewed packed protocol fixture',options);
+const upgraded=await send(item,'upgrade',{...options,operationId:'upgrade'});
+if(upgraded.observation.outcome!=='uncertain'||upgraded.observation.retry.safeToRepeat||!upgraded.observation.retry.reason.includes('upgrade'))throw Error('Upgrade did not terminate conservatively');
+if(JSON.stringify((await send(item,'upgrade',{...options,operationId:'upgrade'})).observation)!==JSON.stringify(upgraded.observation))throw Error('Upgrade recovery changed evidence');
 const snapshot = await client.get(item,{outputInclude:'full',outputBudget:'unbounded',outputLimit:'unbounded'});
 if(!('item' in snapshot))throw Error('Full context unavailable');
 const value = JSON.parse(String(snapshot.item.http_state)) as State & {legacyPadding?:string}; value.legacyPadding=''; value.legacyPadding='x'.repeat(1048576-4096-Buffer.byteLength(JSON.stringify(value)));
@@ -71,6 +79,12 @@ catch(error) { if(!(error instanceof HttpError) || error.code!=='capacity')throw
 console.log('SDK accepted');
 `);
   assert.match(await execute(consumer, manager === 'npm' ? process.execPath : 'bun', ['embed.ts'], env), /SDK accepted/);
+  for (const format of [[], ['--json']]) {
+    const output = await pm(['http', 'send', created.id, 'upgrade', '--operation', 'upgrade', ...format]);
+    const result = (format.length === 0 ? decodeToon(output) : JSON.parse(output)) as { observation: { outcome: string } };
+    assert.equal(result.observation.outcome, 'uncertain'); assert.equal(output.includes(upgrade.secret), false);
+  }
+  assert.equal(upgrade.calls.length, 1);
   for (const format of [[], ['--json']]) for (const mode of [[], ['--dry-run']]) await assert.rejects(pm(['http', 'send', created.id, 'api', '--operation', 'cli-capacity', ...mode, ...format]), error => { const output = error as { stdout: string; stderr: string }; assert.match(output.stdout + output.stderr, /capacity/); return true; });
   assert.equal(calls, 1);
   assert.equal(createHash('sha256').update(await readFile(tarball)).digest('hex'), hash);

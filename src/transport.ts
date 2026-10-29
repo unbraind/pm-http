@@ -1,5 +1,7 @@
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
+import type { IncomingMessage } from 'node:http';
+import type { Duplex } from 'node:stream';
 import { performance } from 'node:perf_hooks';
 import { bodyDigest, bodyShape, captureHeaders, jsonMediaType } from './capture.ts';
 import { HttpError, digest } from './core.ts';
@@ -7,6 +9,8 @@ import { destination, mutating, parseUrl, requestFor, within } from './policy.ts
 import type { Resolver } from './policy.ts';
 import type { Observation, Probe } from './types.ts';
 
+/** Recognize a runtime's structured upgrade refusal without inspecting or retaining its raw message. */
+export function protocolUpgrade(error: unknown): boolean { return typeof error === 'object' && error !== null && 'code' in error && error.code === 'UnrequestedUpgrade'; }
 /** Construct a conservative terminal uncertainty without inventing a response. */
 export function uncertain(id: string, probe: Probe, reason: string, total: number | null = null): Observation {
   return { id, probe: probe.name, probeDigest: digest(probe), at: new Date().toISOString(), outcome: 'uncertain', headers: {}, selectedHeaders: probe.responseHeaders, bytes: 0, timing: { total }, redirects: [], receipt: { bodyTruncated: false, headersOmitted: 0, shapeIncomplete: true, redactions: 0, redirectsOmitted: 0, digestScope: 'captured-prefix' }, retry: { automaticRetries: 0, safeToRepeat: !mutating(probe), reason } };
@@ -19,6 +23,7 @@ export async function capture(id: string, probe: Probe, caller?: AbortSignal, re
   const cancel = (): void => controller.abort();
   caller?.addEventListener('abort', cancel, { once: true }); if (caller?.aborted) cancel();
   const timer = setTimeout(cancel, probe.timeoutMs); const redirects: string[] = [];
+  let unsupportedProtocol = false;
   const timing: Observation['timing'] = { total: 0 };
   /** Interrupt DNS as well as socket IO without logging raw resolver errors. */
   async function addressFor(url: URL) {
@@ -37,17 +42,26 @@ export async function capture(id: string, probe: Probe, caller?: AbortSignal, re
     for (let hop = 0; hop <= 5; hop++) {
       within(url, probe.boundary, hop); const address = await addressFor(url);
       const response = await new Promise<{ status: number; raw: string[]; bytes: Buffer; truncated: boolean; location?: string }>((resolve, reject) => {
+        let settled = false; let responding = false;
         const req = (url.protocol === 'https:' ? httpsRequest : httpRequest)(url, { method: probe.method, headers: request.headers, signal: controller.signal, agent: false, family: address.family, maxHeaderSize: 16384, lookup: (_host, _options, done) => done(null, address.address, address.family) }, res => {
+          if (res.statusCode === 101) { stopProtocol(res, res.socket); return; }
+          responding = true;
           timing.firstByte = performance.now() - started;
-          const chunks: Buffer[] = []; let size = 0; let settled = false;
+          const chunks: Buffer[] = []; let size = 0;
           /** Settle exactly once and close a capped stream promptly. */
-          const finish = (truncated: boolean): void => { if (settled) return; settled = true; resolve({ status: res.statusCode!, raw: res.rawHeaders, bytes: Buffer.concat(chunks), truncated, location: res.headers.location }); if (truncated) res.destroy(); };
+          const finish = (truncated: boolean): void => { if (settled) return; settled = true; controller.signal.removeEventListener('abort', fail); resolve({ status: res.statusCode!, raw: res.rawHeaders, bytes: Buffer.concat(chunks), truncated, location: res.headers.location }); if (truncated) res.destroy(); };
           res.on('data', (chunk: Buffer) => { const remaining = remainingBytes - size; chunks.push(chunk.subarray(0, remaining)); size += Math.min(chunk.length, remaining); if (chunk.length > remaining) finish(true); });
-          res.on('end', () => finish(false)); res.on('error', reject);
+          res.on('end', () => finish(false)); res.on('error', fail); res.once('aborted', fail); res.once('close', fail);
         });
+        /** Settle independently of ordinary response/error events, including abort and premature close. */
+        const fail = (error?: unknown): void => { if (settled) return; unsupportedProtocol ||= protocolUpgrade(error); settled = true; controller.signal.removeEventListener('abort', fail); req.destroy(); reject(new Error('Incomplete HTTP exchange')); };
+        /** Close detached protocol sockets without admitting unbounded non-HTTP payloads or header values. */
+        const stopProtocol = (_response: IncomingMessage, socket: Duplex): void => { unsupportedProtocol = true; timing.firstByte = performance.now() - started; socket.once('error', fail); socket.destroy(); fail(); };
+        req.once('upgrade', stopProtocol); req.once('connect', stopProtocol);
+        req.once('close', () => { if (!responding) fail(); });
         req.on('socket', socket => { socket.once('connect', () => { timing.connect = performance.now() - started; }); socket.once('secureConnect', () => { timing.tls = performance.now() - started; }); });
         req.maxHeadersCount = 0; // The parser's 16 KiB byte cap bounds allocation; count the full header set truthfully.
-        req.on('error', reject); req.end(request.body);
+        req.on('error', fail); controller.signal.addEventListener('abort', fail, { once: true }); req.end(request.body);
       });
       remainingBytes -= response.bytes.length;
       const isRedirect = [301, 302, 303, 307, 308].includes(response.status) && response.location !== undefined;
@@ -68,12 +82,13 @@ export async function capture(id: string, probe: Probe, caller?: AbortSignal, re
         try { const result = bodyShape(JSON.parse(response.bytes.toString('utf8'))); shape = result.shape; shapeIncomplete = result.incomplete; } catch { shapeIncomplete = true; }
       }
       timing.total = performance.now() - started;
-      return { id, probe: probe.name, probeDigest: digest(probe), at: new Date().toISOString(), outcome: 'response', status: response.status, headers: selected.headers, selectedHeaders: probe.responseHeaders, ...(shape === undefined ? {} : { shape }), digest: bodyDigest(response.bytes), bytes: response.bytes.length, timing, redirects, receipt: { bodyTruncated: response.truncated, headersOmitted: selected.omitted, shapeIncomplete, redactions: selected.redactions, redirectsOmitted, digestScope: response.truncated ? 'captured-prefix' : 'complete' }, retry: { automaticRetries: 0, safeToRepeat: !mutating(probe), reason: 'No automatic retries; repeat only by explicit new operation' } };
+      return { id, probe: probe.name, probeDigest: digest(probe), at: new Date().toISOString(), outcome: 'response', status: response.status, headers: selected.headers, selectedHeaders: probe.responseHeaders, ...(shape === undefined ? {} : { shape }), digest: bodyDigest(response.bytes), bytes: response.bytes.length, timing: { ...timing }, redirects, receipt: { bodyTruncated: response.truncated, headersOmitted: selected.omitted, shapeIncomplete, redactions: selected.redactions, redirectsOmitted, digestScope: response.truncated ? 'captured-prefix' : 'complete' }, retry: { automaticRetries: 0, safeToRepeat: !mutating(probe), reason: 'No automatic retries; repeat only by explicit new operation' } };
     }
   } catch (error) {
     if (caller?.aborted) throw new HttpError('cancelled', 'Send cancelled without an observation', 'Use a new operation identity for any explicitly reviewed retry');
     if (error instanceof HttpError && error.code !== 'timeout') throw error;
-    return uncertain(id, probe, 'Transport outcome uncertain; no automatic retry', performance.now() - started);
+    timing.total = performance.now() - started;
+    return { ...uncertain(id, probe, unsupportedProtocol ? 'HTTP upgrade/tunnel outside capture; inspect the endpoint before any explicit retry' : 'Transport outcome uncertain; no automatic retry', timing.total), timing: { ...timing } };
   } finally { clearTimeout(timer); caller?.removeEventListener('abort', cancel); }
   throw new HttpError('redirect_limit', 'Redirect chain exceeds five hops', 'Declare a probe for the final authorized destination');
 }
