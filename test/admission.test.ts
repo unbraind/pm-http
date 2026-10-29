@@ -8,11 +8,11 @@ import { Store, capacity, RESPONSE_RESERVATION, state, targetDigest } from '../s
 import { bodyShape, jsonMediaType } from '../src/capture.ts';
 import { wire, digest } from '../src/core.ts';
 import type { State, Step } from '../src/types.ts';
-import { server, tracker, contents, investigation } from './helpers.ts';
+import { server, tracker, contents, investigation, paddedState } from './helpers.ts';
 
 /** Fill a real tracker with synthetic legacy context while retaining the declared free byte budget. */
 async function fill(store: Store, item: string, remaining: number): Promise<void> {
-  await store.change(item, value => { const padded = value as State & { legacyPadding?: string }; padded.legacyPadding = ''; padded.legacyPadding = 'x'.repeat(1048576 - remaining - Buffer.byteLength(JSON.stringify(padded)) - 32); return true; }, 'Synthetic legacy state capacity fixture');
+  await store.change(item, value => { Object.assign(value, paddedState(value, remaining + 32)); return true; }, 'Synthetic legacy state capacity fixture');
 }
 /** Recognize a stale send without changing the established public conflict exit category. */
 function stale(error: unknown): boolean { return error instanceof HttpError && error.code === 'conflict' && error.details.reason === 'stale_revision'; }
@@ -50,6 +50,8 @@ test('capacity counts pending slots and UTF-8 bytes; structural result bounds ho
   const revision = { ...state(undefined), revision: Number.MAX_SAFE_INTEGER }; capacity(revision);
   revision.plans.push({ id: 'guard', probe: 'api', probeDigest: 'fixture', stage: 'sending' }); assert.throws(() => capacity(revision), HttpError);
   revision.revision -= 2; capacity(revision);
+  for (const reservedBytes of [-1, 1.5, NaN]) assert.throws(() => capacity({ ...state(undefined), plans: [{ id: 'bad', probe: 'api', probeDigest: 'fixture', stage: 'planned', reservedBytes }] }), HttpError);
+  assert.throws(() => capacity({ ...state(undefined), plans: Array.from({ length: 129 }, () => ({ id: 'done', probe: 'api', probeDigest: 'fixture', stage: 'recorded' as const })) }), HttpError);
   for (let width = 8; width <= 64; width += 8) {
     const object = Object.fromEntries(Array.from({ length: width }, (_, key) => [String(key), { child: null }]));
     const shaped = bodyShape(Array.from({ length: width }, () => object));
@@ -61,13 +63,13 @@ test('capacity counts pending slots and UTF-8 bytes; structural result bounds ho
 });
 
 test('preview and reviewed apply agree at the exact serialized byte boundary across revision digit growth', async t => {
-  const f = await tracker(t); let calls = 0; const s = await server(t, (_req, res) => { calls++; res.writeHead(200, { 'content-type': 'application/json' }); res.end('{}'); });
+  let calls = 0; const s = await server(t, (_req, res) => { calls++; res.writeHead(200, { 'content-type': 'application/json' }); res.end('{}'); });
   for (const revision of [8, 9]) for (const offset of [-1, 0, 1]) {
-    const item = (await f.client.create({ type: 'Task', title: 'Synthetic exact budget boundary', createMode: 'progressive' })).item.id;
+    const f = await tracker(t); const item = f.item;
     await addProbe(item, 'api', { url: s.url, boundary: s.url, method: 'POST' }, f.options); await reviewProbe(item, 'api', 'Reviewed exact budget fixture', f.options);
     const snapshot = await new Store(f.options).read(item); const original = snapshot.value as State & { legacyPadding?: string }; original.revision = revision; original.legacyPadding = '';
     const operationId = 'byte-edge'; const simulated = structuredClone(original); admitPlan(simulated, simulated.probes[0], operationId, revision, targetDigest(snapshot.item, operationId)); simulated.revision++;
-    original.legacyPadding = 'x'.repeat(1048576 - RESPONSE_RESERVATION - Buffer.byteLength(JSON.stringify(simulated)) + offset);
+    original.legacyPadding = paddedState(simulated, RESPONSE_RESERVATION - offset).legacyPadding;
     await f.client.update(item, { httpState: JSON.stringify(original) } as PmClientFullMutationOptions);
     const options = { ...f.options, operationId, expectedRevision: revision };
     if (offset > 0) for (const apply of [preview, send]) await assert.rejects(apply(item, 'api', options), error => error instanceof HttpError && error.code === 'capacity');
@@ -145,8 +147,7 @@ test('legacy planned operations acquire recording capacity before any network ef
   for (const available of [false, true]) {
     const operationId = available ? 'legacy-room' : 'legacy-full'; const snapshot = await store.read(f.item);
     snapshot.value.plans.push({ id: operationId, probe: 'api', probeDigest: digest(snapshot.value.probes[0]), stage: 'planned' });
-    const legacy = snapshot.value as State & { legacyPadding?: string }; legacy.legacyPadding = '';
-    legacy.legacyPadding = 'x'.repeat(1048576 - (available ? RESPONSE_RESERVATION + 8192 : 4096) - Buffer.byteLength(JSON.stringify(legacy)));
+    const legacy = paddedState(snapshot.value, available ? RESPONSE_RESERVATION + 8192 : 4096);
     await f.client.update(f.item, { httpState: JSON.stringify(legacy) } as PmClientFullMutationOptions);
     if (available) {
       assert.equal((await send(f.item, 'api', { ...f.options, operationId })).observation.outcome, 'response');
@@ -161,8 +162,7 @@ test('native writers that bypass reservations are rechecked before the sending t
   const f = await investigation(t); const store = new Store(f.options);
   await assert.rejects(send(f.item, 'api', { ...f.options, operationId: 'native-capacity', boundary: async point => {
     if (point !== 'planned') return;
-    const snapshot = await store.read(f.item); const value = snapshot.value as State & { legacyPadding?: string }; value.legacyPadding = '';
-    value.legacyPadding = 'x'.repeat(1048576 - 4096 - Buffer.byteLength(JSON.stringify(value)));
+    const snapshot = await store.read(f.item); const value = paddedState(snapshot.value, 4096);
     await f.client.update(f.item, { httpState: JSON.stringify(value) } as PmClientFullMutationOptions);
   } }), error => error instanceof HttpError && error.code === 'capacity');
   assert.equal(f.count.calls, 0);

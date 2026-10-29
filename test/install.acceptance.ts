@@ -37,6 +37,7 @@ for (const manager of ['npm', 'bun']) test(`one packed artifact: ${manager} and 
   assert.ok(Buffer.byteLength(await pm(['http', 'diff', created.id, '--budget', '1500', '--json'])) / 4 <= 1500);
   await writeFile(join(consumer, 'embed.ts'), `import { observations, compare, differencePacket, missingEvidence, addProbe, reviewProbe, send, HttpError } from 'pm-http';
 import { PmClient } from '@unbrained/pm-cli/sdk';
+import type { State } from 'pm-http';
 const item = ${JSON.stringify(created.id)};
 const options = { workspace: process.env.PM_PATH! };
 if ((await observations(item, options)).observations.length !== 1 || (await compare(item, options)).comparisons[0].result !== 'satisfies' || (await differencePacket(item, options)).estimatedTokens > 1500 || (await missingEvidence(item, options)).missing.length !== 0) throw Error('SDK acceptance failed');
@@ -45,12 +46,19 @@ await addProbe(item, 'guarded', {url,boundary:url,method:'POST'}, options);
 await reviewProbe(item, 'guarded', 'Reviewed packed synthetic fixture', options);
 const client = new PmClient({pmRoot:options.workspace,noExtensions:true});
 const expectedRevision = (await observations(item, options)).revision;
-let refused = false;
-try { await send(item, 'guarded', {...options,expectedRevision,operationId:'guarded',boundary:async point=>{if(point==='sending')await client.update(item,{title:'Competing packed context'});}}); }
-catch(error) { if(!(error instanceof HttpError) || error.details.reason!=='stale_revision')throw error; refused=true; }
-if(!refused)throw Error('Stale packed request was sent');
+/** Require the installed SDK to refuse before effects. */
+async function expectStale(run:()=>Promise<unknown>) { try { await run(); } catch(error) { if(error instanceof HttpError && error.details.reason==='stale_revision')return; throw error; } throw Error('Stale packed request was sent'); }
+await expectStale(()=>send(item, 'guarded', {...options,expectedRevision,operationId:'guarded',boundary:async point=>{if(point==='sending')await client.update(item,{title:'Competing packed context'});}}));
+await expectStale(()=>send(item,'guarded',{...options,expectedRevision:undefined,operationId:'guard-erased',boundary:async point=>{
+if(point!=='sending')return;
+const target=await client.get(item,{outputInclude:'full',outputBudget:'unbounded',outputLimit:'unbounded'});
+if(!('item' in target))throw Error('Full context unavailable');
+const journal=JSON.parse(String(target.item.http_state)) as State; journal.plans.find(plan=>plan.id==='guard-erased')!.stage='cancelled';
+await client.update(item,{httpState:JSON.stringify(journal)});
+}}));
 const snapshot = await client.get(item,{outputInclude:'full',outputBudget:'unbounded',outputLimit:'unbounded'});
-const value = JSON.parse(String(snapshot.item.http_state)); value.legacyPadding=''; value.legacyPadding='x'.repeat(1048576-4096-Buffer.byteLength(JSON.stringify(value)));
+if(!('item' in snapshot))throw Error('Full context unavailable');
+const value = JSON.parse(String(snapshot.item.http_state)) as State & {legacyPadding?:string}; value.legacyPadding=''; value.legacyPadding='x'.repeat(1048576-4096-Buffer.byteLength(JSON.stringify(value)));
 await client.update(item,{httpState:JSON.stringify(value)});
 try { await send(item,'api',{...options,operationId:'capacity'});throw Error('Capacity refusal missing'); }
 catch(error) { if(!(error instanceof HttpError) || error.code!=='capacity')throw error; }

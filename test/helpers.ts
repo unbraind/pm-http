@@ -6,6 +6,12 @@ import type { RequestListener, Server } from 'node:http';
 import type { TestContext } from 'node:test';
 import { PmClient } from '@unbrained/pm-cli/sdk';
 import { addProbe } from '../index.ts';
+import type { State } from '../src/types.ts';
+
+/** Build synthetic legacy padding with an exact remaining UTF-8 state budget. */
+export function paddedState(value: State, remaining: number): State & { legacyPadding: string } {
+  const padded = { ...value, legacyPadding: '' }; padded.legacyPadding = 'x'.repeat(1048576 - remaining - Buffer.byteLength(JSON.stringify(padded))); return padded;
+}
 
 /** Create a native SDK tracker outside git, with no mocked SDK methods. */
 export async function tracker(t: TestContext) {

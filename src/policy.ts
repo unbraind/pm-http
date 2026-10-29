@@ -65,8 +65,17 @@ export function makeProbe(name: string, input: ProbeInput): Probe {
 }
 /** Determine whether an explicit separate review is required. */
 export function mutating(probe: Probe): boolean { return !['GET', 'HEAD', 'OPTIONS'].includes(probe.method); }
+/** Reuse declaration validation before effects, retaining the original private-destination authorization. */
+function storedProbe(probe: Probe): Probe {
+  bound(probe.maxBytes, 1, 1048576); bound(probe.timeoutMs, 1, 60000); bound(probe.maxHeaders, 1, 128);
+  requireInput(Array.isArray(probe.responseHeaders) && probe.responseHeaders.length <= 32 && typeof probe.boundary.private === 'boolean', 'Stored probe ceilings or destination authorization are invalid');
+  const checked = makeProbe(probe.name, { url: probe.url, method: probe.method, headers: Object.entries(probe.headers).map(([key, value]) => `${key}=${value}`), body: probe.body, boundary: probe.boundary.origin + probe.boundary.prefix, maxBytes: probe.maxBytes, timeoutMs: probe.timeoutMs, maxHeaders: probe.maxHeaders, responseHeaders: probe.responseHeaders });
+  requireInput(checked.method === probe.method && checked.boundary.origin === probe.boundary.origin && checked.boundary.prefix === probe.boundary.prefix && (!probe.boundary.private || checked.boundary.private) && JSON.stringify(checked.responseHeaders) === JSON.stringify(probe.responseHeaders), 'Stored probe must retain canonical declaration and boundary fields');
+  return { ...checked, boundary: { ...checked.boundary, private: probe.boundary.private }, ...(probe.review === undefined ? {} : { review: probe.review }) };
+}
 /** Resolve the exact send-time request after all durable declarations have been checked. */
 export function requestFor(probe: Probe, resolve: boolean): { url: URL; headers: Record<string, string>; body?: string; secrets: string[] } {
+  probe = storedProbe(probe);
   if (mutating(probe) && probe.review?.allowMutation !== true) throw new HttpError('mutation_review', 'Mutating probe has no reviewed capability', 'Run pm http probe review with --allow-mutation and --reason');
   if (mutating(probe)) requireInput([probe.review!.author, probe.review!.reason, probe.review!.at].every(entry => typeof entry === 'string' && entry.trim().length > 0), 'Reviewed capability requires an author, reason and timestamp');
   const secrets: string[] = [];

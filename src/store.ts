@@ -21,9 +21,9 @@ export function targetDigest(item: GetResult['item'], operation: string): string
 /** Enforce UTF-8 state capacity and recording slots, including every in-flight reservation. */
 export function capacity(value: State): void {
   const pending = value.plans.filter(plan => plan.stage !== 'recorded' && plan.stage !== 'cancelled');
-  const reserved = pending.reduce((total, plan) => total + (plan.reservedBytes ?? 0), 0);
+  const reserved = pending.reduce((total, plan) => { const bytes = plan.reservedBytes ?? 0; if (!Number.isSafeInteger(bytes) || bytes < 0) throw new HttpError('capacity', 'Pending response reservation is malformed', 'Inspect the journal before declaring a new operation'); return total + bytes; }, 0);
   const transitions = pending.reduce((total, plan) => total + (plan.stage === 'planned' ? 3 : plan.stage === 'sending' ? 2 : 1), 0);
-  if (!Number.isSafeInteger(value.revision + transitions) || value.observations.length + pending.length > 128 || Buffer.byteLength(JSON.stringify(value)) + reserved > 1048576) throw new HttpError('capacity', 'Task cannot retain the bounded HTTP result', 'Use a new investigation task before sending; in-flight result reservations cannot be consumed');
+  if (!Number.isSafeInteger(value.revision + transitions) || value.probes.length > 32 || value.plans.length > 128 || value.observations.length + pending.length > 128 || Buffer.byteLength(JSON.stringify(value)) + reserved > 1048576) throw new HttpError('capacity', 'Task cannot retain the bounded HTTP result', 'Use a new investigation task before sending; in-flight result reservations cannot be consumed');
 }
 /** Process-local admission queues avoid overlapping SDK lock publication windows. */
 const queues = new Map<string, Promise<void>>();
@@ -81,7 +81,6 @@ export class Store {
       const value = snapshot.value;
       if (!await change(value)) { const current = await this.read(id); if (JSON.stringify(current.value) !== before) throw new HttpError('conflict', 'HTTP target changed during unchanged verification', 'Read the current target and retry'); return current.value; }
       value.revision++;
-      requireInput(value.probes.length <= 32 && value.plans.length <= 128, 'Task context ceiling reached; declare a new investigation task');
       capacity(value);
       try {
         await commitItemMutations({ pmRoot: this.options.workspace, author: await this.author(), transactionId: `http-${randomUUID()}`, lockWaitMs: 10000, onTransition: this.options.onTransition, mutations: [{ op: 'update', id: snapshot.id, match: snapshot.item.http_state === undefined ? { key: 'updated_at', value: snapshot.item.updated_at } : { key: 'http_state', value: snapshot.item.http_state }, options: { httpState: JSON.stringify(value), comment: [comment], doc: references } }] });

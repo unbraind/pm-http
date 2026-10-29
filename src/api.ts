@@ -4,10 +4,18 @@ import { digest, HttpError, label, requireInput, bound } from './core.ts';
 import { makeProbe, requestFor } from './policy.ts';
 import { capture, uncertain } from './transport.ts';
 import { Store, assertRevision, capacity, targetDigest, RESPONSE_RESERVATION } from './store.ts';
-import type { Contract, Observation, Options, Probe, ProbeInput, State, Step } from './types.ts';
+import type { Contract, Observation, Options, Plan, Probe, ProbeInput, State, Step } from './types.ts';
 
 /** Locate a canonical probe with prototype-safe lookup. */
 export function probeFrom(value: State, name: string) { const probe = value.probes.find(entry => entry.name === label(name)); if (probe === undefined) throw new HttpError('probe_missing', 'Declared probe does not exist', 'Run pm http probe add for this task'); return probe; }
+/** Bind effect admission to the original caller policy, identity and lifecycle, never mutable guard selectors. */
+export function assertPlanGuard(value: State, entry: Plan | undefined, original: Plan, callerRevision: number | undefined, phase: 1 | 2, sourceDigest: string | undefined): asserts entry is Plan {
+  if (entry === undefined || entry.id !== original.id || entry.probe !== original.probe || entry.probeDigest !== original.probeDigest || entry.stage !== (phase === 1 ? 'planned' : 'sending') || entry.observation !== undefined || phase === 2 && entry.reservedBytes !== RESPONSE_RESERVATION - 1024 || entry.targetDigest !== original.targetDigest || callerRevision === undefined && (entry.expectedRevision !== undefined || entry.guardRevision !== undefined || entry.targetDigest !== undefined)) throw new HttpError('conflict', 'Send journal policy or identity changed', 'Inspect the current journal and declare a new operation', { reason: 'stale_revision' });
+  if (callerRevision !== undefined) {
+    assertRevision(entry.expectedRevision ?? -1, callerRevision); assertRevision(entry.guardRevision ?? -1, callerRevision + phase); assertRevision(value.revision, callerRevision + phase);
+    if (sourceDigest !== original.targetDigest) throw new HttpError('conflict', 'Native target changed after planning', 'Read current context and declare a new operation', { reason: 'stale_revision' });
+  }
+}
 /** Share operation identity, guard and recording-capacity admission between preview and apply. */
 export function admitPlan(value: State, probe: Probe, id: string, expectedRevision: number | undefined, sourceDigest: string): boolean {
   requireInput(/^[a-zA-Z0-9_-]{1,64}$/.test(id), 'Operation identity must be a short identifier');
@@ -15,6 +23,7 @@ export function admitPlan(value: State, probe: Probe, id: string, expectedRevisi
   if (previous !== undefined) {
     requireInput(previous.probeDigest === digest(probe) && previous.probe === probe.name, 'Operation already belongs to another declaration');
     if (expectedRevision !== undefined) assertRevision(expectedRevision, previous.expectedRevision ?? -1);
+    if (previous.stage === 'cancelled') throw new HttpError('cancelled', 'Operation was cancelled or refused without an observation', 'Inspect the refusal and use a new operation identity');
     if (previous.stage === 'planned') capacity({ ...value, plans: value.plans.map(plan => plan === previous ? { ...plan, reservedBytes: RESPONSE_RESERVATION } : plan) });
     return false;
   }
@@ -25,7 +34,7 @@ export function admitPlan(value: State, probe: Probe, id: string, expectedRevisi
 /** Declare an immutable request bound to an existing native task. */
 export async function addProbe(item: string, name: string, input: ProbeInput, options: Options) {
   const probe = makeProbe(name, input); const store = new Store(options);
-  const value = await store.change(item, async current => { const existing = current.probes.find(entry => entry.name === probe.name); if (existing !== undefined) { requireInput(digest({ ...existing, review: undefined }) === digest(probe), 'Probe name already declares a different request; use a new name'); return false; } await store.register(); current.probes.push(probe); return true; }, 'Declared HTTP probe; environment references only', [`path=${probe.url},scope=project`]);
+  const value = await store.change(item, async current => { const existing = current.probes.find(entry => entry.name === probe.name); if (existing !== undefined) { requireInput(digest({ ...existing, review: undefined }) === digest(probe), 'Probe name already declares a different request; use a new name'); return false; } current.probes.push(probe); capacity({ ...current, revision: current.revision + 1 }); await store.register(); return true; }, 'Declared HTTP probe; environment references only', [`path=${probe.url},scope=project`]);
   return { probe, revision: value.revision };
 }
 /** Record separate mutation review with attributed author and an explicit reason. */
@@ -41,7 +50,9 @@ export async function listProbes(item: string, options: Options) { const { value
 export async function preview(item: string, name: string, options: Options) {
   const { value, item: target } = await new Store(options).read(item); const probe = probeFrom(value, name); const request = requestFor(probe, false);
   const operation = options.operationId ?? randomUUID(); admitPlan(structuredClone(value), probe, operation, options.expectedRevision, targetDigest(target, operation));
-  return { operation: options.operationId, revision: value.revision, method: probe.method, url: request.url.href, headers: request.headers, body: probe.body, boundary: probe.boundary, maxBytes: probe.maxBytes, timeoutMs: probe.timeoutMs, credentials: 'environment names only' };
+  const previous = value.plans.find(entry => entry.id === operation);
+  if (previous?.stage === 'planned') assertPlanGuard(value, previous, previous, options.expectedRevision ?? previous.expectedRevision, 1, targetDigest(target, operation));
+  return { operation: options.operationId, willSend: previous === undefined || previous.stage === 'planned', revision: value.revision, method: probe.method, url: request.url.href, headers: request.headers, body: probe.body, boundary: probe.boundary, maxBytes: probe.maxBytes, timeoutMs: probe.timeoutMs, credentials: 'environment names only' };
 }
 /** Send using a durable intent; uncertain interrupted sends converge without replaying the request. */
 export async function send(item: string, name: string, options: Options): Promise<{ observation: Observation; operation: string }> {
@@ -56,6 +67,10 @@ export async function send(item: string, name: string, options: Options): Promis
   const step = async (point: Step): Promise<void> => { await options.boundary?.(point); };
   /** Revalidate the immutable declaration in every journal mutation, including recovery. */
   const validate = (value: State): void => { if (digest(probeFrom(value, name)) !== digest(probe)) throw new HttpError('conflict', 'Probe revision changed after planning', 'Inspect the current declaration; use a new reviewed operation'); };
+  /** Cancel only an owned, unrecorded intent; preserve completed or reassigned native evidence. */
+  const cancel = async (): Promise<void> => {
+    await journal.change(initial.id, value => { const entry = value.plans.find(plan => plan.id === id); if (entry === undefined || entry.probe !== probe.name || entry.probeDigest !== digest(probe) || entry.observation !== undefined || !['planned', 'sending'].includes(entry.stage)) return false; entry.stage = 'cancelled'; delete entry.reservedBytes; return true; }, note('HTTP send cancelled or refused; no partial observation'));
+  };
   await step('validated');
   return journal.locked(`send:${initial.id}:${id}`, async () => {
     await step('plan-ready');
@@ -68,7 +83,7 @@ export async function send(item: string, name: string, options: Options): Promis
     const plannedTarget = await journal.read(initial.id);
     await step('planned');
     const plan = current.plans.find(entry => entry.id === id)!;
-    if (plan.stage === 'cancelled') throw new HttpError('cancelled', 'Operation was cancelled or refused without an observation', 'Inspect the refusal and use a new operation identity');
+    const callerRevision = options.expectedRevision ?? plan.expectedRevision;
     let observation = current.observations.find(entry => entry.id === id) ?? plan.observation;
     if (plan.stage === 'sending') observation = uncertain(id, probe, 'Interrupted after send intent; outcome uncertain; no automatic retry');
     if (plan.stage === 'planned') {
@@ -76,31 +91,31 @@ export async function send(item: string, name: string, options: Options): Promis
       requestFor(probe, true);
       try {
         current = await journal.change(initial.id, async value => {
-          validate(value); const entry = value.plans.find(entry => entry.id === id)!;
-          if (entry.expectedRevision !== undefined) {
-            assertRevision(value.revision, entry.guardRevision);
-            const target = (await journal.read(initial.id)).item;
-            if (digest(target) !== digest(plannedTarget.item) || targetDigest(target, id) !== entry.targetDigest) throw new HttpError('conflict', 'Native target changed after planning', 'Read current context and declare a new operation', { reason: 'stale_revision' });
-            entry.guardRevision = value.revision + 1;
+          validate(value); const entry = value.plans.find(entry => entry.id === id);
+          const target = callerRevision === undefined ? undefined : (await journal.read(initial.id)).item;
+          if (callerRevision !== undefined && digest(target) !== digest(plannedTarget.item)) throw new HttpError('conflict', 'Native target changed after planning', 'Read current context and declare a new operation', { reason: 'stale_revision' });
+          assertPlanGuard(value, entry, plan, callerRevision, 1, target === undefined ? undefined : targetDigest(target, id));
+          if (callerRevision !== undefined) {
+            entry.guardRevision = callerRevision + 2;
           }
           entry.stage = 'sending'; entry.reservedBytes = RESPONSE_RESERVATION - 1024; return true;
         }, note('Marked possible HTTP request effect; retries require explicit identity'));
       } catch (error) {
-        if (error instanceof HttpError && error.details.reason === 'stale_revision') await journal.change(initial.id, value => { const entry = value.plans.find(entry => entry.id === id)!; entry.stage = 'cancelled'; delete entry.reservedBytes; return true; }, note('Refused stale send before network effects'));
+        if (error instanceof HttpError && error.details.reason === 'stale_revision') await cancel();
         throw error;
       }
       const readyTarget = await journal.read(initial.id);
       await step('sending');
       try {
         const fresh = await journal.read(initial.id); validate(fresh.value); capacity(fresh.value);
-        const guard = fresh.value.plans.find(entry => entry.id === id)!;
-        if (guard.expectedRevision !== undefined) {
-          assertRevision(fresh.value.revision, guard.guardRevision);
-          if (digest(fresh.item) !== digest(readyTarget.item) || digest(fresh.value) !== digest(current) || targetDigest(fresh.item, id) !== guard.targetDigest) throw new HttpError('conflict', 'Native target changed immediately before send', 'Read current context and declare a new operation', { reason: 'stale_revision' });
+        const guard = fresh.value.plans.find(entry => entry.id === id);
+        if (callerRevision !== undefined) {
+          if (digest(fresh.item) !== digest(readyTarget.item) || digest(fresh.value) !== digest(current)) throw new HttpError('conflict', 'Native target changed immediately before send', 'Read current context and declare a new operation', { reason: 'stale_revision' });
         }
+        assertPlanGuard(fresh.value, guard, plan, callerRevision, 2, callerRevision === undefined ? undefined : targetDigest(fresh.item, id));
         observation = await capture(id, probe, options.signal);
       }
-      catch (error) { await journal.change(initial.id, value => { validate(value); const entry = value.plans.find(entry => entry.id === id)!; entry.stage = 'cancelled'; delete entry.reservedBytes; return true; }, note('HTTP send cancelled or refused; no partial observation')); throw error; }
+      catch (error) { await cancel(); throw error; }
       await journal.change(initial.id, value => { validate(value); const entry = value.plans.find(entry => entry.id === id)!; entry.stage = 'received'; entry.observation = observation; delete entry.reservedBytes; return true; }, note('Journaled complete secret-free HTTP result'));
     }
     await step('received'); await step('record-ready');
