@@ -7,6 +7,7 @@ import { tracker, server, investigation, paddedState, contents } from './helpers
 import type { Probe } from '../src/types.ts';
 import { uncertain } from '../src/transport.ts';
 import { makeProbe } from '../src/policy.ts';
+import { assertPlanGuard } from '../src/api.ts';
 
 /** Admit only a typed stale-guard refusal, never a transport uncertainty after an effect. */
 function stale(error: unknown): boolean { return error instanceof HttpError && error.code === 'conflict' && error.details.reason === 'stale_revision'; }
@@ -71,7 +72,14 @@ test('planned previews share guard checks and distinguish completed or refused o
       await assert.rejects(preview(f.item, 'api', options), stale); await assert.rejects(send(f.item, 'api', options), stale);
       for (const apply of [preview, send]) await assert.rejects(apply(f.item, 'api', { ...f.options, operationId }), error => error instanceof HttpError && error.code === 'cancelled');
     } else {
-      assert.equal((await preview(f.item, 'api', options)).willSend, true); await send(f.item, 'api', options);
+      assert.equal((await preview(f.item, 'api', options)).willSend, true);
+      assert.equal((await preview(f.item, 'api', { ...f.options, operationId })).willSend, true);
+      const current = await store.read(f.item); const original = current.value.plans.find(plan => plan.id === operationId)!;
+      for (const field of ['expectedRevision', 'guardRevision'] as const) {
+        const erased = structuredClone(original); delete erased[field];
+        assert.throws(() => assertPlanGuard(current.value, erased, original, expectedRevision, 1, original.targetDigest), stale);
+      }
+      await send(f.item, 'api', options);
       assert.equal((await preview(f.item, 'api', options)).willSend, false);
     }
   }
