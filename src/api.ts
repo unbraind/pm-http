@@ -15,11 +15,12 @@ export function admitPlan(value: State, probe: Probe, id: string, expectedRevisi
   if (previous !== undefined) {
     requireInput(previous.probeDigest === digest(probe) && previous.probe === probe.name, 'Operation already belongs to another declaration');
     if (expectedRevision !== undefined) assertRevision(expectedRevision, previous.expectedRevision ?? -1);
+    if (previous.stage === 'planned') capacity({ ...value, plans: value.plans.map(plan => plan === previous ? { ...plan, reservedBytes: RESPONSE_RESERVATION } : plan) });
     return false;
   }
   assertRevision(value.revision, expectedRevision);
   value.plans.push({ id, probe: probe.name, probeDigest: digest(probe), stage: 'planned', reservedBytes: RESPONSE_RESERVATION, ...(expectedRevision === undefined ? {} : { expectedRevision, guardRevision: value.revision + 1, targetDigest: sourceDigest }) });
-  capacity(value); return true;
+  capacity({ ...value, revision: value.revision + 1 }); return true;
 }
 /** Declare an immutable request bound to an existing native task. */
 export async function addProbe(item: string, name: string, input: ProbeInput, options: Options) {
@@ -82,7 +83,7 @@ export async function send(item: string, name: string, options: Options): Promis
             if (digest(target) !== digest(plannedTarget.item) || targetDigest(target, id) !== entry.targetDigest) throw new HttpError('conflict', 'Native target changed after planning', 'Read current context and declare a new operation', { reason: 'stale_revision' });
             entry.guardRevision = value.revision + 1;
           }
-          entry.stage = 'sending'; entry.reservedBytes = RESPONSE_RESERVATION; return true;
+          entry.stage = 'sending'; entry.reservedBytes = RESPONSE_RESERVATION - 1024; return true;
         }, note('Marked possible HTTP request effect; retries require explicit identity'));
       } catch (error) {
         if (error instanceof HttpError && error.details.reason === 'stale_revision') await journal.change(initial.id, value => { const entry = value.plans.find(entry => entry.id === id)!; entry.stage = 'cancelled'; delete entry.reservedBytes; return true; }, note('Refused stale send before network effects'));

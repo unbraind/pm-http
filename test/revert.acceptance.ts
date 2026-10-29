@@ -27,6 +27,9 @@ const scenarios = [
   ['review-revision-send', 'api.ts', 'send', 'guarded sends retain', (body: string) => body.replace('if (guard.expectedRevision !== undefined)', 'if (false)')],
   ['review-json-family', 'capture.ts', 'jsonMediaType', 'JSON media-family detection', (_body: string) => '{ return false; }'],
   ['review-shape-budget', 'capture.ts', 'bodyShape', 'capacity counts pending slots', (body: string) => body.replaceAll('if (nodes >= 256) { incomplete = true; break; }', '')],
+  ['review-legacy-admission', 'api.ts', 'admitPlan', 'legacy planned operations', (body: string) => body.replace("if (previous.stage === 'planned') capacity({ ...value, plans: value.plans.map(plan => plan === previous ? { ...plan, reservedBytes: RESPONSE_RESERVATION } : plan) });", '')],
+  ['review-commit-budget', 'api.ts', 'admitPlan', 'preview and reviewed apply agree', (body: string) => body.replace('capacity({ ...value, revision: value.revision + 1 });', 'capacity(value);')],
+  ['review-transition-budget', 'api.ts', 'send', 'preview and reviewed apply agree', (body: string) => body.replace('entry.reservedBytes = RESPONSE_RESERVATION - 1024', 'entry.reservedBytes = RESPONSE_RESERVATION')],
 ] as const;
 /** Run one real behavioral test file in a disposable copy, never the reviewed checkout. */
 function run(root: string, pattern: string, file: string) { const outcome = spawnSync(process.execPath, ['--test', '--test-concurrency=2', '--test-name-pattern', pattern, `test/${file}.test.ts`], { cwd: root, env: npmEnvironment(process.env), encoding: 'utf8', timeout: 180000 }); return { status: outcome.status, output: outcome.stdout + outcome.stderr }; }

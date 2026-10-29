@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { PmClientFullMutationOptions } from '@unbrained/pm-cli/sdk';
+import { acquireLockLease } from '@unbrained/pm-cli/sdk';
 import { addProbe, reviewProbe, send, preview, setContract, observations, compare, HttpError } from '../index.ts';
+import { admitPlan } from '../src/api.ts';
 import { Store, capacity, RESPONSE_RESERVATION, state, targetDigest } from '../src/store.ts';
 import { bodyShape, jsonMediaType } from '../src/capture.ts';
 import { wire, digest } from '../src/core.ts';
@@ -45,6 +47,9 @@ test('capacity counts pending slots and UTF-8 bytes; structural result bounds ho
   for (const stage of ['planned', 'sending', 'received'] as const) { value.plans = [{ id: 'pending', probe: 'api', probeDigest: 'fixture', stage }]; assert.throws(() => capacity(value), HttpError); }
   for (const stage of ['recorded', 'cancelled'] as const) { value.plans = [{ id: 'done', probe: 'api', probeDigest: 'fixture', stage }]; capacity(value); }
   const unicode = { ...state(undefined), legacyPadding: '🙂'.repeat(300000) }; assert.throws(() => capacity(unicode), HttpError);
+  const revision = { ...state(undefined), revision: Number.MAX_SAFE_INTEGER }; capacity(revision);
+  revision.plans.push({ id: 'guard', probe: 'api', probeDigest: 'fixture', stage: 'sending' }); assert.throws(() => capacity(revision), HttpError);
+  revision.revision -= 2; capacity(revision);
   for (let width = 8; width <= 64; width += 8) {
     const object = Object.fromEntries(Array.from({ length: width }, (_, key) => [String(key), { child: null }]));
     const shaped = bodyShape(Array.from({ length: width }, () => object));
@@ -55,9 +60,27 @@ test('capacity counts pending slots and UTF-8 bytes; structural result bounds ho
   assert.ok(Buffer.byteLength(JSON.stringify(bodyShape(chain).shape)) < 32768);
 });
 
+test('preview and reviewed apply agree at the exact serialized byte boundary across revision digit growth', async t => {
+  const f = await tracker(t); let calls = 0; const s = await server(t, (_req, res) => { calls++; res.writeHead(200, { 'content-type': 'application/json' }); res.end('{}'); });
+  for (const revision of [8, 9]) for (const offset of [-1, 0, 1]) {
+    const item = (await f.client.create({ type: 'Task', title: 'Synthetic exact budget boundary', createMode: 'progressive' })).item.id;
+    await addProbe(item, 'api', { url: s.url, boundary: s.url, method: 'POST' }, f.options); await reviewProbe(item, 'api', 'Reviewed exact budget fixture', f.options);
+    const snapshot = await new Store(f.options).read(item); const original = snapshot.value as State & { legacyPadding?: string }; original.revision = revision; original.legacyPadding = '';
+    const operationId = 'byte-edge'; const simulated = structuredClone(original); admitPlan(simulated, simulated.probes[0], operationId, revision, targetDigest(snapshot.item, operationId)); simulated.revision++;
+    original.legacyPadding = 'x'.repeat(1048576 - RESPONSE_RESERVATION - Buffer.byteLength(JSON.stringify(simulated)) + offset);
+    await f.client.update(item, { httpState: JSON.stringify(original) } as PmClientFullMutationOptions);
+    const options = { ...f.options, operationId, expectedRevision: revision };
+    if (offset > 0) for (const apply of [preview, send]) await assert.rejects(apply(item, 'api', options), error => error instanceof HttpError && error.code === 'capacity');
+    else { await preview(item, 'api', options); assert.equal((await send(item, 'api', options)).observation.status, 200); }
+  }
+  assert.equal(calls, 4);
+});
+
 test('guarded sends retain caller revision across every pre-effect boundary and native task edits', async t => {
   const f = await tracker(t); let calls = 0; const s = await server(t, (_req, res) => { calls++; res.end('{}'); });
   const legacy = await new Store(f.options).read(f.item); assert.equal(typeof targetDigest(legacy.item, 'legacy'), 'string');
+  const withoutComments = { ...legacy.item }; delete withoutComments.comments;
+  assert.equal(targetDigest(legacy.item, 'legacy'), targetDigest(withoutComments, 'legacy'));
   await addProbe(f.item, 'api', { url: s.url, boundary: s.url, method: 'POST' }, f.options); await reviewProbe(f.item, 'api', 'Reviewed synthetic revision fixture', f.options);
   const store = new Store(f.options);
   for (const point of ['validated', 'plan-ready', 'planned', 'sending'] as Step[]) for (const native of [false, true]) {
@@ -105,6 +128,18 @@ test('guarded planned recovery preserves native source identity and original cal
   assert.equal(f.count.calls, 1);
 });
 
+test('a late SDK lease refusal leaves a planned operation recoverable without an uncertain request', async t => {
+  const f = await investigation(t); let release = async (): Promise<void> => {};
+  try {
+    await assert.rejects(send(f.item, 'api', { ...f.options, operationId: 'late-lease', boundary: async point => {
+      if (point !== 'planned') return;
+      const lease = await acquireLockLease(f.workspace, 'http-' + digest('state:' + f.item), 120, 'peer'); release = () => lease.release();
+    } }), error => error instanceof HttpError && error.code === 'conflict');
+  } finally { await release(); }
+  assert.equal(f.count.calls, 0);
+  assert.equal((await send(f.item, 'api', { ...f.options, operationId: 'late-lease' })).observation.outcome, 'response'); assert.equal(f.count.calls, 1);
+});
+
 test('legacy planned operations acquire recording capacity before any network effect', async t => {
   const f = await investigation(t); const store = new Store(f.options);
   for (const available of [false, true]) {
@@ -117,9 +152,20 @@ test('legacy planned operations acquire recording capacity before any network ef
       assert.equal((await send(f.item, 'api', { ...f.options, operationId })).observation.outcome, 'response');
       await assert.rejects(send(f.item, 'api', { ...f.options, operationId, expectedRevision: (await store.read(f.item)).value.revision }), stale);
     }
-    else await assert.rejects(send(f.item, 'api', { ...f.options, operationId }), error => error instanceof HttpError && error.code === 'capacity');
+    else for (const apply of [preview, send]) await assert.rejects(apply(f.item, 'api', { ...f.options, operationId }), error => error instanceof HttpError && error.code === 'capacity');
   }
   assert.equal(f.count.calls, 1);
+});
+
+test('native writers that bypass reservations are rechecked before the sending transition', async t => {
+  const f = await investigation(t); const store = new Store(f.options);
+  await assert.rejects(send(f.item, 'api', { ...f.options, operationId: 'native-capacity', boundary: async point => {
+    if (point !== 'planned') return;
+    const snapshot = await store.read(f.item); const value = snapshot.value as State & { legacyPadding?: string }; value.legacyPadding = '';
+    value.legacyPadding = 'x'.repeat(1048576 - 4096 - Buffer.byteLength(JSON.stringify(value)));
+    await f.client.update(f.item, { httpState: JSON.stringify(value) } as PmClientFullMutationOptions);
+  } }), error => error instanceof HttpError && error.code === 'capacity');
+  assert.equal(f.count.calls, 0);
 });
 
 test('JSON media-family detection is independent of display redaction, suffix, case, parameters and renderers', async t => {

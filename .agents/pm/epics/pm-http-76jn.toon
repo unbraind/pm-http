@@ -7,15 +7,16 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T23:29:15.784Z"
-updated_at: "2026-10-29T02:12:58.703Z"
+updated_at: "2026-10-29T06:36:12.388Z"
 author: codex-agent
 acceptance_criteria: Real SDK no-git fixtures; safety and concurrency revert proofs; all release gates; packed npm and Bun consumers.
-comments[5]{created_at,author,text}:
+comments[6]{created_at,author,text}:
   "2026-10-28T23:30:21.199Z",codex-agent,"Companion specification: pm-cli-website-7u0d (read only). Plan: immutable request declarations, SDK revision-guarded task state, durable send intent and conservative uncertainty recovery. Local package only; no release or remote writes."
   "2026-10-28T23:48:52.037Z",codex-agent,"Measured ten-request proof: 10 historical observations, 2 unauthenticated public calls plus 8 fixture calls, 103388 captured body bytes (25847 estimated tokens), 784-token difference packet, zero omitted packet rows, 90 header redactions, 36861 ms including SDK setup and recording. Scratch non-git tracker removed. Final packet numbers will be refreshed after timing-difference admission."
   "2026-10-28T23:59:50.819Z",codex-agent,In-process native host acceptance passed 12/12. Coverage instrumentation exposed a too-short lock admission wait in simultaneous sends; extended the bounded wait and added per-key process admission queues while retaining native SDK leases and CAS for separate processes. A suspected SDK lock publication defect did not reproduce with the public lease API; it is not reported as an SDK bug.
   "2026-10-29T01:53:50.680Z",codex-agent,"Resume verification: native CLI privacy and independent-process contention acceptance each passed 1/1. CLI expected-error recovery uses a supported sanitized payload rather than echoing request arguments. Completed 13 behavioral safety/concurrency reverts; added host-error privacy as a fourteenth proof. Packed npm/npx and Bun/bunx journeys passed 2/2. Final release gates follow the implementation commit."
   "2026-10-29T02:12:30.394Z",codex-agent,"Tracker-linked SDK/model/state/transport checks passed 20/20 using pm_context_mode=none and workspace_context_mode=snapshot (47,495 ms). Final historical ten-request proof: 10 observations; 2 unauthenticated public calls plus 8 fixture calls; 103388 captured body bytes or 25847 estimated tokens; 817-token packet; zero omitted packet rows; 90 header redactions; 65151 ms including SDK setup and recording. Scratch non-git tracker deleted. The backend conditional-writer limitation is tracked by pm-http-a8z1; final release gate results will be reported with exact local commit identities."
+  "2026-10-29T06:36:12.382Z",codex-agent,"PR 1 review fixes address response recording capacity before effects, durable caller-revision admission and redaction-independent JSON-family parsing. All listed review classes and the synthetic CodeQL fixture provenance were audited across SDK/CLI, renderers, no-git trackers and packed consumers. Eight new revert proofs passed; all focused checks passed. Public SDK gaps #1399, #1576 and #1620 remain explicitly documented without an atomic native-writer guarantee. Final gate results and exact final commit will be reported in the PR and handoff."
 files[10]{path,scope}:
   index.ts,project
   src/api.ts,project

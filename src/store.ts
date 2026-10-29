@@ -22,7 +22,8 @@ export function targetDigest(item: GetResult['item'], operation: string): string
 export function capacity(value: State): void {
   const pending = value.plans.filter(plan => plan.stage !== 'recorded' && plan.stage !== 'cancelled');
   const reserved = pending.reduce((total, plan) => total + (plan.reservedBytes ?? 0), 0);
-  if (value.observations.length + pending.length > 128 || Buffer.byteLength(JSON.stringify(value)) + reserved > 1048576) throw new HttpError('capacity', 'Task cannot retain the bounded HTTP result', 'Use a new investigation task before sending; in-flight result reservations cannot be consumed');
+  const transitions = pending.reduce((total, plan) => total + (plan.stage === 'planned' ? 3 : plan.stage === 'sending' ? 2 : 1), 0);
+  if (!Number.isSafeInteger(value.revision + transitions) || value.observations.length + pending.length > 128 || Buffer.byteLength(JSON.stringify(value)) + reserved > 1048576) throw new HttpError('capacity', 'Task cannot retain the bounded HTTP result', 'Use a new investigation task before sending; in-flight result reservations cannot be consumed');
 }
 /** Process-local admission queues avoid overlapping SDK lock publication windows. */
 const queues = new Map<string, Promise<void>>();

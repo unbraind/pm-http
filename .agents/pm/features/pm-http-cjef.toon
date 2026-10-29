@@ -6,17 +6,20 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T23:30:41.622Z"
-updated_at: "2026-10-29T05:59:42.557Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-29T06:36:14.582Z"
 author: codex-agent
 acceptance_criteria: "Redirect and DNS confinement, private destination declarations, byte/header/time ceilings, cancellation without partial observation and zero uncertain mutation retries; behavioral revert proofs."
 parent: pm-http-76jn
-comments[2]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-10-29T02:12:27.890Z",codex-agent,"Behavioral revert evidence: npm run test:revert completed the original 13 scenarios; npm run test:revert -- host-error-privacy completed the fourteenth. Each safety removal failed by assertion in a disposable copy and the restored implementation passed. Native literal-secret CLI refusal output is covered. No reviewed checkout mutation was used."
   "2026-10-29T05:59:42.540Z",codex-agent,"Whole-package review audit: all effects pass through the shared send API; previews now share operation/revision/capacity admission. Capacity includes pending observation slots and UTF-8 bytes across every Store.change writer. JSON-family classification is independent of display redaction and renderer. The CodeQL fixture warning came from intentionally echoing synthetic request authorization; the fixture now echoes only its locally generated value and separately asserts the received authorization matches, preserving and strengthening the no-secret persistence test. No additional review findings were listed in the available re-review packet."
-files[2]{path,scope}:
+  "2026-10-29T06:36:11.792Z",codex-agent,"General rule: recording resources and effect preconditions must be admitted before network effects on every method, including previews and legacy recovery. All Store writers preserve pending bytes, observation slots and revision transition headroom. A 1 KiB transition allowance prevents false acceptance at exact byte limits; globally bounded shape allocation keeps results below the reserved record ceiling. Adversarial native-writer, Unicode, fanout, revision rollover, capacity boundary and lease refusal fixtures passed. Existing mutation, random-secret and contention checks passed 3/3."
+files[6]{path,scope}:
   src/policy.ts,project
+  test/admission.test.ts,project
+  test/http.test.ts,project
+  test/install.acceptance.ts,project
+  test/revert.acceptance.ts,project
   test/transport.test.ts,project
 tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=2 test/transport.test.ts,project,codex-agent,"2026-10-29T00:03:22.416Z",local_mutation,feat/http

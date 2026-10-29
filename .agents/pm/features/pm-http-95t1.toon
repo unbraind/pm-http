@@ -6,17 +6,16 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T23:30:37.952Z"
-updated_at: "2026-10-29T06:11:25.499Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-29T06:36:12.874Z"
 author: codex-agent
 acceptance_criteria: SDK expected-revision mutations; competing write and crash at every send boundary; stable operation identity converges without duplicate requests or observations.
 parent: pm-http-76jn
-comments[4]{created_at,author,text}:
+comments[5]{created_at,author,text}:
   "2026-10-28T23:41:23.284Z",codex-agent,"Implemented journaled sends with eight deterministic protocol boundaries, stable operation identities and revision-guarded SDK state. Every interrupted possible send converges to stored evidence or explicit uncertainty without replay; two concurrent identities preserve both observations."
   "2026-10-29T00:26:01.227Z",codex-agent,"Independent-process acceptance passed 9/9: distinct writers and shared operation identity, plus SIGKILL at all eight send/record boundaries. Native dead leases recover and stable reruns admit exactly one observation, with at most one request. Logical interleaving and interruption schedules also pass 16/16."
   "2026-10-29T05:42:43.430Z",codex-agent,"PR 1 re-review: close the effect-admission class. Carry caller revision in durable plans, re-read the native item/probe immediately before any send, and refuse stale context. Public SDK limitations #1576 and #1620 leave a documented re-read-to-send window. Reserve sufficient state capacity before effects; concurrent writes must preserve in-flight recording capacity. Search all CLI, SDK, recovery and packed consumer paths; add adversarial no-git fixtures and behavioral revert proofs."
   "2026-10-29T06:11:25.499Z",codex-agent,"Focused results: admission corpus passed 6/6, plus the post-commit native-writer race passed 1/1; existing mutation/redaction/contention checks passed 3/3. Guarded planned recovery succeeds unchanged, refuses stale native comments, and retains the original caller revision. Legacy unreserved plans upgrade capacity before effects. Typecheck, ESLint, zero-duplication and docstring checks passed. Final source verification and behavioral revert proofs continue."
+  "2026-10-29T06:36:10.576Z",codex-agent,"Review proof complete: six admission/media/shape/legacy behavioral reverts plus two exact-byte/transition-budget reverts passed (8 distinct scenarios). Each removed protection failed by assertion in a disposable copy; restored behavior passed. Capacity and legacy admission were rechecked after UTF-8 and revision-headroom refinements (2/2). Tracker-linked tests passed 7/7 at 2469be5; the latest boundary subset passed 3/3, exact byte-boundary property passed 1/1, and late SDK lease recovery passed 1/1. Packed npm/npx and Bun/bunx consumers passed 2/2 with guarded SDK calls and CLI capacity refusals in both formats. Final unchanged-threshold release checks follow the final evidence commit."
 files[9]{path,scope}:
   src/api.ts,project
   src/store.ts,project
