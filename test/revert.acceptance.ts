@@ -26,13 +26,14 @@ const scenarios = [
 /** Run one real behavioral test file in a disposable copy, never the reviewed checkout. */
 function run(root: string, pattern: string, file: string) { const outcome = spawnSync(process.execPath, ['--test', '--test-concurrency=2', '--test-name-pattern', pattern, `test/${file}.test.ts`], { cwd: root, env: npmEnvironment(process.env), encoding: 'utf8', timeout: 180000 }); return { status: outcome.status, output: outcome.stdout + outcome.stderr }; }
 try {
-  for (const [name, file, functionName, pattern, mutation] of scenarios) {
+  const selectedScenarios = process.argv[2] === undefined ? scenarios : scenarios.filter(([name]) => name === process.argv[2]);
+  assert.ok(selectedScenarios.length > 0, 'Requested revert scenario must exist');
+  for (const [name, file, functionName, pattern, mutation] of selectedScenarios) {
     const root = join(scratch, name); for (const path of ['src', 'test', 'index.ts', 'package.json']) cpSync(join(repository, path), join(root, path), { recursive: true }); symlinkSync(join(repository, 'node_modules'), join(root, 'node_modules'), 'dir');
     const target = join(root, 'src', file); const source = readFileSync(target, 'utf8'); const parsed = parse(source, { sourceType: 'module', plugins: ['typescript'] });
     let selected: { start?: number | null; end?: number | null } | undefined;
     for (const node of parsed.program.body) {
-      if (node.type !== 'ExportNamedDeclaration') continue;
-      const declaration = node.declaration;
+      const declaration = node.type === 'ExportNamedDeclaration' ? node.declaration : node;
       if (declaration?.type === 'FunctionDeclaration' && declaration.id?.name === functionName) selected = declaration.body;
       if (declaration?.type === 'ClassDeclaration') for (const method of declaration.body.body) if (method.type === 'ClassMethod' && method.key.type === 'Identifier' && method.key.name === functionName) selected = method.body;
     }
@@ -43,5 +44,5 @@ try {
     writeFileSync(target, source); const restored = run(root, pattern, suite); assert.equal(restored.status, 0, `${name} fixed behavior must pass after restoration: ${restored.output}`);
     console.log(`${name}: safety removal fails; restored implementation passes`);
   }
-  console.log(`Revert proofs: ${scenarios.length}/${scenarios.length}`);
+  console.log(`Revert proofs: ${selectedScenarios.length}/${selectedScenarios.length}`);
 } finally { rmSync(scratch, { recursive: true, force: true }); }

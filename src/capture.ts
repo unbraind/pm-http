@@ -39,7 +39,7 @@ export function matches(actual: Shape, expected: Shape): boolean {
 /** Retain only canonical nonopaque header semantics; everything else is redacted. */
 export function headerValue(name: string, value: string, secrets: string[]): string {
   if (secrets.some(secret => value.includes(secret)) || /[\u0000-\u001f\u007f-\u009f]/.test(value)) return '[REDACTED]';
-  if (name === 'content-type') { const mime = value.split(';')[0].trim().toLowerCase(); return ['application/json', 'text/plain', 'text/html', 'application/octet-stream'].includes(mime) ? mime : '[REDACTED]'; }
+  if (name === 'content-type') { const mime = value.split(';')[0].trim().toLowerCase(); return ['application/json', 'application/problem+json', 'application/vnd.github+json', 'text/plain', 'text/html', 'application/octet-stream'].includes(mime) ? mime : '[REDACTED]'; }
   if ((name === 'content-length' || name === 'retry-after') && /^\d{1,7}$/.test(value) && Number(value) <= 1048576) return String(Number(value));
   if (name === 'cache-control' && /^(?:no-store|no-cache|public|private|max-age=\d{1,6})(?:, ?(?:no-store|no-cache|public|private|max-age=\d{1,6}))*$/.test(value)) return value;
   return '[REDACTED]';

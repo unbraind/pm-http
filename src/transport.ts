@@ -60,9 +60,11 @@ export async function capture(id: string, probe: Probe, caller?: AbortSignal, re
         // Redirect queries are remote data, so only a digest enters durable context.
         redirects.push(digest(next.href)); url = next; continue;
       }
-      const selected = captureHeaders(response.raw, probe.responseHeaders, probe.maxHeaders, request.secrets);
-      let shape; let shapeIncomplete = response.truncated;
-      if (!response.truncated && response.bytes.length > 0 && selected.headers['content-type'] === 'application/json') {
+      const selected = captureHeaders(response.raw, [...probe.responseHeaders, 'content-type'], probe.maxHeaders, request.secrets);
+      const contentType = selected.headers['content-type'];
+      if (!probe.responseHeaders.includes('content-type')) delete selected.headers['content-type'];
+      let shape; let shapeIncomplete = response.truncated || contentType === undefined && selected.omitted > 0;
+      if (!response.truncated && response.bytes.length > 0 && (contentType === 'application/json' || contentType?.endsWith('+json'))) {
         try { const result = bodyShape(JSON.parse(response.bytes.toString('utf8'))); shape = result.shape; shapeIncomplete = result.incomplete; } catch { shapeIncomplete = true; }
       }
       timing.total = performance.now() - started;
