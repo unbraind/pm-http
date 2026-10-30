@@ -2,14 +2,19 @@ id: pm-http-s2xn
 title: Produce bounded difference packets and missing evidence
 description: ""
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-28T23:30:35.346Z"
-updated_at: "2026-10-29T02:12:45.359Z"
+updated_at: "2026-10-30T14:22:26.871Z"
+closed_at: "2026-10-30T14:22:23.991Z"
+completed_at: "2026-10-29T12:53:49.000Z"
 author: codex-agent
 acceptance_criteria: First bad versus preceding last good; field differences; exact outstanding requests; both renderer budgets include omission receipts.
 parent: pm-http-76jn
+resolution: "Delivered by PR #1 (3969f89): Keep HTTP investigations as secret-free task context with bounded difference packets"
+expected_result: First bad versus preceding last good; field differences; exact outstanding requests; both renderer budgets include omission receipts.
+actual_result: "PR #1 merged at 2026-10-29T12:53:49Z as 3969f89; required CI passed on the merged head."
 files[2]{path,scope}:
   src/derive.ts,project
   test/http.test.ts,project
@@ -18,4 +23,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
 docs[2]{path,scope}:
   ARCHITECTURE.md,project
   README.md,project
+close_reason: "Delivered by PR #1 (3969f89): Keep HTTP investigations as secret-free task context with bounded difference packets"
 body: ""
