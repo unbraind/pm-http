@@ -1,0 +1,21 @@
+id: pm-http-github-3c83aae34e57-5
+title: Expose exact packet byte costs and distinguish heuristic units from tokenizer counts
+description: "GH issue #5: https://github.com/unbraind/pm-http/issues/5 · author @unbraind · created 2026-10-29T05:26:56Z · updated 2026-10-29T05:26:56Z"
+type: Issue
+status: open
+priority: 2
+tags[2]: "gh:unbraind/pm-http#5","github_author:unbraind"
+created_at: "2026-10-29T05:26:56Z"
+updated_at: "2026-10-31T09:42:55.354Z"
+author: pm-github
+github_close_reason: ""
+github_closed_at: ""
+github_created_at: "2026-10-29T05:26:56Z"
+github_link_only: false
+github_number: 5
+github_release: ""
+github_state: open
+github_state_reason: unspecified
+github_updated_at: "2026-10-29T05:26:56Z"
+github_url: "https://github.com/unbraind/pm-http/issues/5"
+body: "## Classification\nStatic measurement/API improvement, not a reproduced HTTP transport defect. Reviewed PR #1 at `572246a6e0b1a0eff5624e263c8880b7802446c9` (package version2026.10.29).\n\n## Evidence\n[`src/core.ts`](https://github.com/unbraind/pm-http/blob/572246a6e0b1a0eff5624e263c8880b7802446c9/src/core.ts) defines `tokens(value)` as `ceil(max(JSON,TOON UTF-8 bytes)/4)`; `differencePacket` uses this for `estimatedTokens` and its budget. The receipt discloses the estimator, which is useful, but the SDK function comment calls it conservative and the PR description calls the measured output an “817-token” packet. [Real-data documentation](https://github.com/unbraind/pm-http/blob/572246a6e0b1a0eff5624e263c8880b7802446c9/docs/real-data.md) labels these estimates rather than naming a tokenizer. UTF-8 bytes/4 is not a model token measurement or guaranteed upper bound.\n\nIndependent isolated source check on Node24.22.1 and SDK2026.10.28, using a synthetic injected read-only client (no HTTP requests, secrets or native mutation): one complete first-bad/last-good packet serializes to949JSON UTF-8 bytes and660TOON bytes including newline; reported `estimatedTokens=238` is exactly `ceil(949/4)`. No actual token count was measured.\n\n## Impact / intended contract\nThe package's [canonical epic](https://github.com/unbraind/pm-http/blob/572246a6e0b1a0eff5624e263c8880b7802446c9/.agents/pm/epics/pm-http-76jn.toon) calls for bounded difference packets. Agent consumers need to distinguish an enforceable serialized-byte ceiling from approximate model cost, particularly with hashes, punctuation and different tokenizers. The proxy can remain an explicitly named estimate, but must not become proof that a model context budget fits or a measured token reduction. This proposal does not ask to weaken omissions, provenance or historical evidence.\n\n## Acceptance / regression criteria\n- Expose exact JSON and TOON UTF-8 bytes (including the final renderer/newline framing), with clearly documented byte-budget semantics or explicitly named heuristic units.\n- If token budgets/counts are supported, name the tokenizer/model encoding and measure with it; otherwise avoid unqualified token counts and “conservative” model-token guarantees.\n- Qualify the817 claim and body-only comparison; separately identify all successful-task commands, receipts and retries when presenting end-to-end cost.\n- Keep self-inclusive receipt accounting, exact omitted/returned counts, restore instructions, complete-source distinction and all existing semantic oracles.\n- Cover both renderers, long digests, non-ASCII strings and minimum receipt size. No paid model/API evaluation is necessary.\n\nLimits: no tokenizer-specific undercount was measured here; this is an evidenced naming/measurement improvement, not a claim of a measured overflow or security failure. All-status issue scan found only PRs1–4 and no duplicate issue; native tracker record was checked."
