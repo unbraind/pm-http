@@ -1,0 +1,11 @@
+id: pm-http-33ck
+title: Distinguish exact serialized byte costs from heuristic token estimates in difference packets
+description: "Tracks gh:unbraind/pm-http#5 (filed 2026-10-29, missed by the blind issue watch). src/core.ts computes tokens(value) as ceil(max(JSON, TOON UTF-8 bytes)/4) and reports it as estimatedTokens with its budget; the epic's bounded-difference-packet contract is met, but agent consumers cannot distinguish an enforceable serialized-byte ceiling from an approximate model-token cost (ceil(bytes/4) is neither a tokenizer count nor a guaranteed upper bound). Request: expose the exact packet byte costs alongside the estimate, and name the estimator explicitly in receipts/docs so a context budget claim cannot be read as a measured token count. Static proposal; no transport defect reproduced."
+type: Issue
+status: open
+priority: 2
+tags[3]: api,"gh:unbraind/pm-http#5",measurement
+created_at: "2026-11-02T09:17:27.180Z"
+updated_at: "2026-11-02T09:17:27.180Z"
+author: pi-glm
+body: ""
