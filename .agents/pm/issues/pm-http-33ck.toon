@@ -2,10 +2,32 @@ id: pm-http-33ck
 title: Distinguish exact serialized byte costs from heuristic token estimates in difference packets
 description: "Tracks gh:unbraind/pm-http#5 (filed 2026-10-29, missed by the blind issue watch). src/core.ts computes tokens(value) as ceil(max(JSON, TOON UTF-8 bytes)/4) and reports it as estimatedTokens with its budget; the epic's bounded-difference-packet contract is met, but agent consumers cannot distinguish an enforceable serialized-byte ceiling from an approximate model-token cost (ceil(bytes/4) is neither a tokenizer count nor a guaranteed upper bound). Request: expose the exact packet byte costs alongside the estimate, and name the estimator explicitly in receipts/docs so a context budget claim cannot be read as a measured token count. Static proposal; no transport defect reproduced."
 type: Issue
-status: open
+status: in_progress
 priority: 2
 tags[3]: api,"gh:unbraind/pm-http#5",measurement
 created_at: "2026-11-02T09:17:27.180Z"
-updated_at: "2026-11-02T09:17:27.180Z"
+updated_at: "2026-11-06T15:46:40.919Z"
 author: pi-glm
+comments[5]{created_at,author,text}:
+  "2026-11-06T14:11:37.107Z",codex-sol,"Confirmed current main retains the local byte/4 estimator and independent packet fitting loop. Issue 5 remains applicable; companion G6 requests the SDK fitter with the existing skip policy. Plan: failing real no-git tracker tests, exact self-inclusive JSON/TOON byte accounting including newline, explicit heuristic budget naming, SDK fitting, boundary/revert proofs, documentation and full review loop. Installed SDK already exports the fitter, so no pin change is required."
+  "2026-11-06T14:16:32.947Z",codex-sol,"Failing-first proof on main: both initial real no-git tracker tests failed because exact byte fields were absent (measured JSON 2301 / TOON 1775 bytes for the Unicode/digest fixture). Fixed packets use the installed SDK fitter, skip admission, canonical estimation, self-inclusive renderer bytes, and typed safe fitting refusals. Targeted packet tests pass, including minimum receipts and decimal/budget boundaries. Typecheck, lint, docstring and unchanged duplication gates pass. Historical 817 and raw-body figures are explicitly scoped as heuristics; no current hosted or public data was accessed."
+  "2026-11-06T14:20:29.145Z",codex-sol,"Validation: packet linked test 4/4 passed; focused HTTP/command tests 29/29 passed. Behavioral revert proofs 5/5 passed in disposable copies: original main differencePacket fails all three packet regressions and native-host byte assertions; restoring skip admission, JSON newline accounting or SDK refusal mapping makes its corresponding regression pass after the intentional revert fails. npm typecheck, lint, docstring (96 declarations) and duplication (0 percent) passed at unchanged gates. The full npm gate is also running with isolated HOME and Git identity; CI will run full npm/Bun gates on the PR head. No tokenizer or end-to-end task-cost claim is made."
+  "2026-11-06T15:42:42.063Z",codex-sol,"Full isolated npm and Bun release gates passed: each ran 143/143 tests, 100 percent statements/branches/functions/lines across 20 configured source files and 2/2 packed npm/Bun investigations against the declared minimum SDK. Node 22/26 CI and CodeQL also passed on 12b71dc. The required explicit review remains queued with no findings received. Follow-up correction: pin the revert harness to historical main e2074b1, so its original-function proofs remain reproducible after the fix is merged; production implementation is unchanged. Re-running all five disposable proofs and targeted static gates before the correction push. PR: https://github.com/unbraind/pm-http/pull/21."
+  "2026-11-06T15:46:37.785Z",codex-sol,"Pinned-baseline correction verified: all five disposable revert proofs passed again; typecheck and lint passed. A real disposable git clone advanced origin/main to the fixed function: the pinned e2074b1 harness passed, while reverting the harness to moving origin/main failed its identity check. This proves the harness remains usable after main advances. Refreshed current main and independently verified its tracker history remains a byte prefix of this branch. Production source is byte-identical to the implementation that passed both full local release gates and prior-head CI. The correction push will receive fresh exact-head CI and the queued review."
+files[8]{path,scope}:
+  index.ts,project
+  src/commands.ts,project
+  src/core.ts,project
+  src/derive.ts,project
+  test/commands.test.ts,project
+  test/packet.test.ts,project
+  test/real-data.acceptance.ts,project
+  test/revert.acceptance.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/packet.test.ts,project,codex-sol,"2026-11-06T14:16:42.421Z",local_mutation,exact-packet-byte-costs
+  node test/revert.acceptance.ts issue5-packet issue5-packet-host issue5-skip issue5-byte-framing issue5-sdk-refusals,project,codex-sol,"2026-11-06T14:20:25.211Z",local_mutation,exact-packet-byte-costs
+docs[3]{path,scope}:
+  ARCHITECTURE.md,project
+  docs/real-data.md,project
+  README.md,project
 body: ""

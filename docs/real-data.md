@@ -7,10 +7,14 @@ Measured 2026-10-29T00:58:16.455Z. Ten explicit read-only requests in a temporar
 | Observations | 10 |
 | HTTP calls | 10 (2 public, 8 fixture) |
 | Captured raw response body bytes | 103388 |
-| Raw body estimated tokens (bytes/4, rounded up) | 25847 |
-| Difference packet estimated tokens | 817 |
+| Raw body heuristic units (bytes/4, rounded up) | 25847 |
+| Historical packet heuristic units (bytes/4, rounded up) | 817 |
 | Packet omitted rows | 0 |
 | Header redactions | 90 |
 | Total elapsed milliseconds, including SDK setup and recording | 65151 |
 
 Packet costs include the omission receipt and the larger serialized JSON/TOON format. Raw cost includes response bodies only, excluding headers and transcript/request overhead. Body values and keys are never retained. Historical captures are not current health. The incident changes from a successful numeric revision to a failing string revision; the packet identifies the first bad and preceding last good observations. Missing evidence: [{"probe":"pm-evidence","evidence":"complete-response"},{"probe":"pm-hypothesis","evidence":"complete-response"},{"probe":"pending","evidence":"observation"},{"probe":"pending","evidence":"contract"}]. Public schemas wider than 64 properties produce explicit structural omissions.
+
+The historical 817 figure is a byte-derived heuristic, not a tokenizer count or guaranteed model-token bound. Exact JSON and TOON lengths were not saved, so they cannot be reconstructed from that rounded value. The SDK fitter and new accounting fields change current packet costs; this table is an immutable historical measurement, not a current-size claim.
+
+Successful-task scope: this SDK harness performs tracker initialization and task creation, four probe declarations, three contract declarations, ten explicit `send` operations (two public and eight fixture observations), then `observations`, `differencePacket`, and `missingEvidence` reads. Native SDK recording/journal receipts, request/response metadata, setup returns, the observation-list and missing-evidence responses, and this report are excluded from the body-only baseline. The packet figure includes only its own historical receipt and framing. No automatic request retries are implemented, and this run recorded ten calls for ten sends; no recovery/retry transcript or all-command serialized costs were measured. Consequently these numbers do not establish an end-to-end token reduction. Public responses are not re-fetched for this correction.

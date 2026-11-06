@@ -11,6 +11,10 @@
 - Produce bounded difference packets and missing evidence ([pm-http-s2xn](https://github.com/unbraind/pm-http/blob/main/.agents/pm/features/pm-http-s2xn.toon))
 - Recover concurrent journaled sends ([pm-http-95t1](https://github.com/unbraind/pm-http/blob/main/.agents/pm/features/pm-http-95t1.toon))
 
+### Fixed
+
+- Distinguish exact serialized byte costs from heuristic token estimates in difference packets ([pm-http-33ck](https://github.com/unbraind/pm-http/blob/main/.agents/pm/issues/pm-http-33ck.toon))
+
 ### Other
 
 - Build task-scoped HTTP investigation context ([pm-http-76jn](https://github.com/unbraind/pm-http/blob/main/.agents/pm/epics/pm-http-76jn.toon))

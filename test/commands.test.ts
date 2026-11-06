@@ -28,8 +28,9 @@ test('real native host runs every command without git, in TOON and JSON', async 
   await cli(f.root, f.workspace, ['contract', 'set', f.item, 'api', '--status', '200', '--status', '204', '--json-shape', shape, '--require-header', 'content-type', '--max-latency-ms', '5000']);
   for (const format of [[], ['--json']]) {
     const packet = await cli(f.root, f.workspace, ['diff', f.item, '--budget', '1500', ...format]);
-    const parsed = (format.length === 0 ? decodeToon(packet.stdout) : JSON.parse(packet.stdout)) as { receipt: { sourceComplete: boolean } };
+    const parsed = (format.length === 0 ? decodeToon(packet.stdout) : JSON.parse(packet.stdout)) as { bytes: { json: number; toon: number }; receipt: { sourceComplete: boolean } };
     assert.ok(parsed.receipt.sourceComplete); assert.ok(Buffer.byteLength(packet.stdout) / 4 <= 1500);
+    assert.equal(Buffer.byteLength(packet.stdout), format.length === 0 ? parsed.bytes.toon : parsed.bytes.json);
   }
   await cli(f.root, f.workspace, ['compare', f.item, 'api']); await cli(f.root, f.workspace, ['missing', f.item, '--json']);
   const bounded = JSON.parse((await cli(f.root, f.workspace, ['diff', f.item, '--budget', '256', '--json'])).stdout) as { receipt: { restore: string; missing: string } };
