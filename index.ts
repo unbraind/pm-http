@@ -19,7 +19,7 @@ export const setContract = guarded(api.setContract);
 export const observations = guarded(derive.observations);
 /** Compare stored observations to current explicit contracts. */
 export const compare = guarded(derive.compare);
-/** Produce historical differences under a self-inclusive token budget. */
+/** Produce historical differences under a self-inclusive heuristic-unit budget with exact JSON/TOON UTF-8 byte costs. */
 export const differencePacket = guarded(derive.differencePacket);
 /** Enumerate exact outstanding evidence requests. */
 export const missingEvidence = guarded(derive.missingEvidence);

@@ -20,7 +20,7 @@ function functionBody(source: string, name: string): { start: number; end: numbe
 /** Revert exactly a historical function without duplicating its implementation in a fixture. */
 function historicalBody(name = 'send', revision = '560e3de'): string {
   let source: string;
-  try { source = execFileSync('git', ['show', revision + ':src/' + (name === 'targetDigest' ? 'store' : name === 'capture' ? 'transport' : 'api') + '.ts'], { cwd: repository, env: npmEnvironment(gitEnvironment(process.env)), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); }
+  try { source = execFileSync('git', ['show', revision + ':src/' + (name === 'differencePacket' ? 'derive' : name === 'targetDigest' ? 'store' : name === 'capture' ? 'transport' : 'api') + '.ts'], { cwd: repository, env: npmEnvironment(gitEnvironment(process.env)), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); }
   catch { throw new Error('Historical revert proof needs the package Git history; run it from a source checkout'); }
   const body = functionBody(source, name); return source.slice(body.start, body.end);
 }
@@ -56,6 +56,11 @@ const scenarios = [
   ['review-comment-journal', 'api.ts', 'send', 'legacy weak-fingerprint', (body: string) => body.replace("    });\n    const plannedTarget", "    }, note('Journaled explicit HTTP send intent'));\n    const plannedTarget").replace("        });\n      } catch (error)", "        }, note('Marked possible HTTP request effect; retries require explicit identity'));\n      } catch (error)")],
   ['review-request-lifecycle', 'transport.ts', 'capture', 'protocol upgrade variants settle', (_body: string) => historicalBody('capture', '04babaa')],
   ['review-upgrade-socket', 'transport.ts', 'capture', 'protocol upgrade variants settle', (body: string) => body.replaceAll('socket.destroy();', '').replaceAll('req.destroy();', '')],
+  ['issue5-packet', 'derive.ts', 'differencePacket', 'packet exact bytes|SDK packet fitting|empty minimum', (_body: string) => historicalBody('differencePacket', 'origin/main')],
+  ['issue5-packet-host', 'derive.ts', 'differencePacket', 'real native host runs every command', (_body: string) => historicalBody('differencePacket', 'origin/main')],
+  ['issue5-skip', 'derive.ts', 'differencePacket', 'SDK packet fitting', (body: string) => body.replace("policy: 'skip'", "policy: 'prefix'")],
+  ['issue5-byte-framing', 'derive.ts', 'packetEnvelope', 'packet exact bytes', (body: string) => body.replace("'json') + '\\n'", "'json')")],
+  ['issue5-sdk-refusals', 'core.ts', 'failure', 'actual SDK infeasible', (body: string) => body.replace('if (error instanceof OutputEnvelopeFitError)', 'if (false)')],
 ] as const;
 /** Run one real behavioral test file in a disposable copy, never the reviewed checkout. */
 function run(root: string, pattern: string, file: string) { const outcome = spawnSync(process.execPath, ['--test', '--test-concurrency=2', '--test-name-pattern', pattern, `test/${file}.test.ts`], { cwd: root, env: npmEnvironment(process.env), encoding: 'utf8', timeout: 180000 }); return { status: outcome.status, output: outcome.stdout + outcome.stderr }; }
@@ -66,8 +71,9 @@ try {
     const root = join(scratch, name); for (const path of ['src', 'test', 'index.ts', 'package.json']) cpSync(join(repository, path), join(root, path), { recursive: true }); symlinkSync(join(repository, 'node_modules'), join(root, 'node_modules'), 'dir');
     const target = join(root, 'src', file); const source = readFileSync(target, 'utf8'); const selected = functionBody(source, functionName); const begin = selected.start; const end = selected.end;
     const body = source.slice(begin, end); const replaced = mutation(body); assert.notEqual(body, replaced);
-    writeFileSync(target, source.slice(0, begin) + replaced + source.slice(end));
-    const suite = ['review-request-lifecycle', 'review-upgrade-socket'].includes(name) ? 'lifecycle' : name.startsWith('review-comment-') ? 'context-identity' : ['review-policy-frame', 'review-original-send', 'review-reservation-integrity', 'review-stored-declarations', 'review-schema-admission'].includes(name) ? 'guard-policy' : name.startsWith('review-') ? 'admission' : name === 'host-error-privacy' ? 'commands' : name === 'inert-rendering' || name === 'conditional-record' ? 'models' : 'http'; const outcome = run(root, pattern, suite); assert.equal(outcome.status, 1, `${name} must fail by assertion, not timeout or crash`);
+    writeFileSync(target, (name === 'issue5-packet' || name === 'issue5-packet-host' ? "import { tokens, requireInput } from './core.ts';\n" : '') + source.slice(0, begin) + replaced + source.slice(end));
+    const suite = name === 'issue5-packet-host' ? 'commands' : name.startsWith('issue5-') ? 'packet' : ['review-request-lifecycle', 'review-upgrade-socket'].includes(name) ? 'lifecycle' : name.startsWith('review-comment-') ? 'context-identity' : ['review-policy-frame', 'review-original-send', 'review-reservation-integrity', 'review-stored-declarations', 'review-schema-admission'].includes(name) ? 'guard-policy' : name.startsWith('review-') ? 'admission' : name === 'host-error-privacy' ? 'commands' : name === 'inert-rendering' || name === 'conditional-record' ? 'models' : 'http'; const outcome = run(root, pattern, suite); assert.equal(outcome.status, 1, `${name} must fail by assertion, not timeout or crash`);
+    if (name === 'issue5-packet') assert.match(outcome.output, /fail 3/, 'Every new packet regression fails with the original function');
     writeFileSync(target, source); const restored = run(root, pattern, suite); assert.equal(restored.status, 0, `${name} fixed behavior must pass after restoration: ${restored.output}`);
     console.log(`${name}: safety removal fails; restored implementation passes`);
   }

@@ -4,7 +4,7 @@ import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
 import type { CommandHandlerContext, ExtensionApi, FlagDefinition } from '@unbrained/pm-cli/sdk/authoring';
 import { addProbe, listProbes, preview, reviewProbe, send, setContract } from './api.ts';
 import { compare, differencePacket, missingEvidence } from './derive.ts';
-import { HttpError, requireInput, wire } from './core.ts';
+import { HttpError, failure, requireInput, wire } from './core.ts';
 import { FIELDS } from './store.ts';
 
 /** Reject absent or array operands without echoing untrusted data. */
@@ -15,7 +15,7 @@ function texts(value: unknown): string[] { return value === undefined ? [] : (Ar
 function number(value: unknown): number | undefined { if (value === undefined) return undefined; requireInput(typeof value === 'string' && /^\d+$/.test(value), 'Numeric flag requires a nonnegative integer'); const parsed = Number(value); requireInput(Number.isSafeInteger(parsed), 'Numeric flag exceeds the safe integer range'); return parsed; }
 /** Convert one refusal into the native host's safe expected-error contract. */
 function expected(error: unknown) {
-  const refusal = error instanceof HttpError ? error : new HttpError('sdk', 'HTTP context command failed', 'Check tracker health, schema file and access before retrying');
+  const refusal = failure(error);
   return createPmCliExpectedError(`http ${refusal.code}: ${refusal.message}. Remedy: ${refusal.remedy}`, { exitCode: refusal.code === 'cancelled' ? 130 : refusal.code === 'conflict' ? 3 : 2, context: { code: refusal.code, ...refusal.details, required: refusal.remedy, recovery: { attempted_command: 'pm http [arguments omitted]', normalized_args: [], provided_fields: [] } } });
 }
 /** Execute through the native host renderer and structured expected-error boundary. */

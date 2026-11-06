@@ -1,5 +1,7 @@
 import { matches } from './capture.ts';
-import { bound, digest, label, tokens, requireInput } from './core.ts';
+import { fitOutputEnvelope } from '@unbrained/pm-cli/sdk';
+import type { OutputEnvelopeFitReceipt } from '@unbrained/pm-cli/sdk';
+import { bound, digest, label, wire } from './core.ts';
 import { Store } from './store.ts';
 import type { Contract, Missing, Observation, Options, State, Verdict } from './types.ts';
 
@@ -78,17 +80,26 @@ export function differences(value: State): unknown[] {
     return { kind: 'difference', probe: probe.name, mode: firstBad < 0 ? 'latest-pair' : 'first-bad-last-good', before: before === undefined ? null : { id: before.id, at: before.at }, after: after === undefined ? null : { id: after.id, at: after.at }, verdict: after === undefined ? null : verdict(after, contract, digest(probe)), changes };
   });
 }
-/** Build a compact, historical packet; the receipt and both renderer costs count toward budget. */
+/** Construct domain accounting from the SDK fixed point without another convergence loop. */
+function packetEnvelope(task: string, revision: number, rows: readonly unknown[], fit: Readonly<OutputEnvelopeFitReceipt>) {
+  const packet = { task, revision, historical: true, rows, estimatedTokens: fit.estimated_tokens, bytes: { json: fit.output_bytes, toon: fit.output_bytes }, receipt: { sourceComplete: true, omitted: fit.omitted_count, returned: rows.length, restore: `pm http diff ${task} --budget 1000000`, missing: `pm http missing ${task}`, estimator: 'ceil(max(json,toon)_utf8_bytes/4)', budgetUnit: 'heuristic-units' } };
+  // Both formats spell these scalar integers identically. Their length difference
+  // is independent of the accounting values, even across decimal digit boundaries.
+  // Subtract that difference from the SDK's maximum; the SDK alone converges and
+  // verifies the complete envelope, including these fields and output_fit.
+  const json = Buffer.byteLength(wire({ ...packet, output_fit: fit }, 'json') + '\n');
+  const toon = Buffer.byteLength(wire({ ...packet, output_fit: fit }, 'toon') + '\n');
+  const max = Math.max(json, toon);
+  packet.bytes = { json: Math.max(0, fit.output_bytes - (max - json)), toon: Math.max(0, fit.output_bytes - (max - toon)) };
+  return packet;
+}
+/** Build a historical packet under a self-inclusive heuristic-unit ceiling, not a model-token budget. */
 export async function differencePacket(item: string, options: Options & { budget?: number }) {
   const budget = bound(options.budget ?? 1500, 256, 1000000); const snapshot = await new Store(options).read(item);
   const source = [...missing(snapshot.value).map(row => ({ kind: 'missing', ...row })), ...differences(snapshot.value)];
-  /** Recompute self-inclusive token accounting after every selected row. */
-  const make = (rows: unknown[]) => {
-    const packet = { task: snapshot.id, revision: snapshot.value.revision, historical: true, rows, estimatedTokens: 0, receipt: { sourceComplete: true, omitted: source.length - rows.length, returned: rows.length, restore: `pm http diff ${snapshot.id} --budget 1000000`, missing: `pm http missing ${snapshot.id}`, estimator: 'ceil(max(json,toon)_utf8_bytes/4)' } };
-    let cost = tokens(packet); while (packet.estimatedTokens !== cost) { packet.estimatedTokens = cost; cost = tokens(packet); } return packet;
-  };
-  let result = make([]);
-  requireInput(result.estimatedTokens <= budget, 'Budget cannot contain the complete omission receipt; increase --budget');
-  for (const row of source) { const next = make([...result.rows, row]); if (next.estimatedTokens <= budget) result = next; }
-  return result;
+  return fitOutputEnvelope(source, {
+    tokenBudget: budget, policy: 'skip',
+    buildEnvelope: (rows, receipt) => packetEnvelope(snapshot.id, snapshot.value.revision, rows, receipt),
+    renderers: { json: packet => wire(packet, 'json') + '\n', toon: packet => wire(packet, 'toon') + '\n' },
+  }).envelope;
 }

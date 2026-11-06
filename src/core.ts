@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { encode } from '@toon-format/toon';
-import { PmCliError, EXIT_CODE } from '@unbrained/pm-cli/sdk';
+import { PmCliError, EXIT_CODE, OutputEnvelopeFitError, estimatePmOutputTokens } from '@unbrained/pm-cli/sdk';
 
 /** Typed refusal with no raw network, environment or SDK diagnostic. */
 export class HttpError extends Error {
@@ -30,8 +30,8 @@ export function data(value: unknown): unknown {
 }
 /** Use host-selected TOON or JSON; untrusted text stays labeled data. */
 export function wire(value: unknown, format: 'json' | 'toon'): string { const safe = data(value); return format === 'json' ? JSON.stringify(safe, null, 2) : encode(safe); }
-/** Conservative byte/4 estimate covering both serialized host formats and newline. */
-export function tokens(value: unknown): number { return Math.ceil(Math.max(Buffer.byteLength(wire(value, 'json') + '\n'), Buffer.byteLength(wire(value, 'toon') + '\n')) / 4); }
+/** Heuristic units from the SDK estimator, covering both formats and newline; not tokenizer counts. */
+export function tokens(value: unknown): number { return estimatePmOutputTokens(Math.max(Buffer.byteLength(wire(value, 'json') + '\n'), Buffer.byteLength(wire(value, 'toon') + '\n'))); }
 /** Accept bounded integral controls without coercing malformed values. */
 export function bound(value: number, min: number, max: number): number { requireInput(Number.isSafeInteger(value) && value >= min && value <= max, 'Numeric control is outside its documented bounds'); return value; }
 /** Resolve a reference name without retaining its value in diagnostics. */
@@ -44,7 +44,14 @@ export function resolveReference(value: string): string {
 }
 /** Reject prompt-sized and token-shaped declarations before persistence. */
 export function label(value: string): string { requireInput(/^[a-zA-Z][a-zA-Z0-9_-]{0,47}$/.test(value), 'Names must be 1 to 48 identifier characters'); return value.toLowerCase(); }
+/** Translate host and fitter failures without exposing source content or SDK diagnostics. */
+export function failure(error: unknown): HttpError {
+  if (error instanceof HttpError) return error;
+  if (error instanceof OutputEnvelopeFitError) return new HttpError(error.code, 'A verified HTTP packet could not be fitted', error.code === 'output_envelope_infeasible' ? 'Increase --budget to contain the complete omission receipt' : 'Read complete evidence with pm http missing and the observations SDK; report the fitting refusal');
+  if (error instanceof PmCliError && error.exitCode === EXIT_CODE.CONFLICT) return new HttpError('conflict', 'Another writer holds or changed the target', 'Wait for the writer, read current context and explicitly resume with the same operation identity');
+  return new HttpError('sdk', 'HTTP context SDK operation failed', 'Check tracker health, access and registered schema; retry the same operation identity');
+}
 /** Adapt all public operations to safe, typed failures. */
 export function guarded<A extends unknown[], R>(fn: (...args: A) => Promise<R>): (...args: A) => Promise<R> {
-  return async (...args) => { try { return await fn(...args); } catch (error) { if (error instanceof HttpError) throw error; if (error instanceof PmCliError && error.exitCode === EXIT_CODE.CONFLICT) throw new HttpError('conflict', 'Another writer holds or changed the target', 'Wait for the writer, read current context and explicitly resume with the same operation identity'); throw new HttpError('sdk', 'HTTP context SDK operation failed', 'Check tracker health, access and registered schema; retry the same operation identity'); } };
+  return async (...args) => { try { return await fn(...args); } catch (error) { throw failure(error); } };
 }
