@@ -54,10 +54,10 @@
   },
   "devDependencies": {
     "@babel/eslint-parser": "8.0.7",
-    "@babel/parser": "8.0.10",
+    "@babel/parser": "8.1.0",
     "@babel/plugin-syntax-typescript": "8.0.3",
     "@types/node": "26.6.6",
-    "@unbrained/pm-cli": "2026.11.1",
+    "@unbrained/pm-cli": "2026.11.2",
     "c8": "^12.0.0",
     "eslint": "10.14.0",
     "fast-glob": "3.3.3",
