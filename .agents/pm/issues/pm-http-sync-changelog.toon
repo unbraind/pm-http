@@ -1,0 +1,27 @@
+id: pm-http-sync-changelog
+title: Keep sync changelog regeneration consistent with the release gate
+description: ""
+type: Issue
+status: in_progress
+priority: 1
+tags[3]: automation,changelog,"gh:unbraind/pm-http#8"
+created_at: "2026-11-08T03:14:04.799Z"
+updated_at: "2026-11-08T05:53:29.243Z"
+assignee: pi-agent
+claim_principal: pi-agent
+author: pi-agent
+acceptance_criteria: The configured sync generation and package changelog check agree on real temporary trackers; Keep dependency pins and all coverage thresholds unchanged and record a behavioral revert failure
+comments[4]{created_at,author,text}:
+  "2026-11-08T03:14:22.056Z",pi-agent,"Verified PR #8 fails only because the reusable sync generator supplies --no-pending-release to changelog:full while changelog:check retains the package release-version policy. REST update-branch refuses with a base/head conflict. Configure a caller-owned changelog:automation alias that runs the unchanged canonical generator, and verify its actual output with the existing checker on a real temporary tracker. This preserves the package policy and avoids changing the delegated changelog root cause or dependency pins."
+  "2026-11-08T03:24:39.987Z",pi-agent,"The real temporary-tracker regression passes 1 of 1 and local typecheck passes. In a disposable copy, reverting only the caller post-import-script selection fails the existing changelog check, while restoring it passes 1 of 1. The exact pinned reusable workflow declares the string input and conditionally adds the differing flag only for its default changelog:full name. Node test concurrency remains capped at two. Full npm and Bun release checks will run sequentially after the focused verification."
+  "2026-11-08T04:07:25.362Z",pi-agent,"The final real-tracker fixture clears inherited Git repository selection, PM-root overrides, npm user-config policy variants and Node test context before setting its isolated paths. Credential-shaped keys are removed. The refined fixture still passes 1 of 1 and typecheck passes. Product configuration, dependency pins and thresholds are unchanged."
+  "2026-11-08T05:53:29.241Z",pi-agent,"Local npm run release:check and bun run release:check pass at unchanged thresholds. npm coverage suite 144/144 with 0 skipped; bun coverage suite 144/144 with 0 skipped; packed npm/npx and Bun/bunx no-git acceptance also passes 2/2 per full gate. The real temporary-tracker regression, final fixture isolation, typecheck and isolated caller-configuration revert all pass. Exact-head CI remains the full remote gate before orchestrator review."
+files[3]{path,scope}:
+  .github/workflows/pm-github-sync.yml,project
+  package.json,project
+  test/automation-changelog.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/automation-changelog.test.ts,project,pi-agent,"2026-11-08T03:15:41.908Z",local_mutation,fix/sync-changelog-1108
+docs[1]{path,scope}:
+  README.md,project
+body: ""

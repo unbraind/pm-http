@@ -15,4 +15,5 @@ jobs:
   gated-sync:
     uses: unbraind/pm-github/.github/workflows/pm-github-sync.yml@a935d7b9cefde7c5099e552914653217e1024c3f # pm-github 2026.11.02
     with:
+      post-import-script: "changelog:automation"
       pm-github-version: "2026.10.28"
