@@ -47,7 +47,8 @@
     "verify:release-publish-attestation": "node scripts/verify-release-publish-attestation.ts",
     "identity:check": "node scripts/identity-gate.ts",
     "test:real-data": "npm run build && node test/real-data.acceptance.ts",
-    "test:revert": "node test/revert.acceptance.ts"
+    "test:revert": "node test/revert.acceptance.ts",
+    "changelog:automation": "npm run changelog:full"
   },
   "peerDependencies": {
     "@unbrained/pm-cli": ">=2026.10.28"

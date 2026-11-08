@@ -147,3 +147,7 @@ Release checks enforce 100% statements/branches/functions/lines across every aut
 | 2 | Invalid declaration, boundary/private destination refusal, absent credential, unsupported capability or safe SDK failure; read the remedy |
 | 3 | Revision conflict; read current context and re-plan/recover |
 | 130 | Caller cancellation; no partial observation admitted |
+
+GitHub issue sync regenerates through `changelog:automation`, which runs the
+same full generator that `changelog:check` verifies. This caller script keeps
+the reusable workflow from injecting a different pending-release policy.
