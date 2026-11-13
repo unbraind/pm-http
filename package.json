@@ -58,7 +58,7 @@
     "@babel/parser": "8.1.0",
     "@babel/plugin-syntax-typescript": "8.0.3",
     "@types/node": "26.6.6",
-    "@unbrained/pm-cli": "2026.11.9",
+    "@unbrained/pm-cli": "2026.11.10",
     "c8": "^12.0.0",
     "eslint": "10.14.0",
     "fast-glob": "3.3.3",
