@@ -2,11 +2,13 @@ id: pm-http-sync-changelog
 title: Keep sync changelog regeneration consistent with the release gate
 description: ""
 type: Issue
-status: open
+status: closed
 priority: 1
 tags[3]: automation,changelog,"gh:unbraind/pm-http#8"
 created_at: "2026-11-08T03:14:04.799Z"
-updated_at: "2026-11-14T08:51:31.239Z"
+updated_at: "2026-11-14T08:57:17.220Z"
+closed_at: "2026-11-14T08:57:17.118Z"
+completed_at: "2026-11-14T08:57:17.118Z"
 author: pi-agent
 acceptance_criteria: The configured sync generation and package changelog check agree on real temporary trackers; Keep dependency pins and all coverage thresholds unchanged and record a behavioral revert failure
 comments[6]{created_at,author,text}:
@@ -24,4 +26,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=2 test/automation-changelog.test.ts,project,pi-agent,"2026-11-08T03:15:41.908Z",local_mutation,fix/sync-changelog-1108
 docs[1]{path,scope}:
   README.md,project
+close_reason: "https://github.com/unbraind/pm-http/pull/22 merged 2026-11-08T08:35:00Z; merge SHA b77b8e73ffa9c6cacab3e24668097b0e79ab7fb7; PR head d4540af99e7c38399da682ef0b12f78214e61307. Delivered: Issue-sync changelog generation agrees with package release checks on real temporary trackers, preserving dependency pins and all coverage thresholds with a behavioral revert proof. Green at that head: test (22), codeql, test (26), CodeQL, CodeRabbit. Other check outcomes: enable-auto-merge: SKIPPED; cubic · AI code reviewer: NEUTRAL; Sourcery review: SKIPPED (not counted as green). Audit correction: linked number 8 is an open pull request, not an open GitHub issue. The merged delivery in PR 22 meets this item acceptance; the earlier sweep reopening applied the issue-only veto too broadly and is superseded."
 body: ""
