@@ -14,7 +14,7 @@
 ### Fixed
 
 - Keep sync changelog regeneration consistent with the release gate ([pm-http-sync-changelog](https://github.com/unbraind/pm-http/blob/main/.agents/pm/issues/pm-http-sync-changelog.toon))
-- Distinguish exact serialized byte costs from heuristic token estimates in difference packets ([pm-http-33ck](https://github.com/unbraind/pm-http/blob/main/.agents/pm/issues/pm-http-33ck.toon))
+- Expose exact packet byte costs and distinguish heuristic units from tokenizer counts ([pm-http-33ck](https://github.com/unbraind/pm-http/blob/main/.agents/pm/issues/pm-http-33ck.toon))
 
 ### Other
 
