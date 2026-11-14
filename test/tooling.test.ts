@@ -225,8 +225,8 @@ test('identity policy runs as a required CI and release gate', () => {
 });
 
 test('release PR tracking link resolves to an existing epic', () => {
-  const workflow = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8');
-  const body = workflow.split('\n').find(line => line.includes('--body') && line.includes('Tracking:'));
+  const workflow = readFileSync(join(repositoryRoot, 'docs/release-caller-rollout.md'), 'utf8');
+  const body = workflow.split('\n').find(line => line.includes('Tracking:'));
   assert.ok(body);
   const link = body.match(/https:\/\/github\.com\/unbraind\/pm-http\/blob\/main\/(\.agents\/pm\/epics\/[^)]+\.toon)/);
   assert.ok(link);
