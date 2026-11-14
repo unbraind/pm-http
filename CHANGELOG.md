@@ -13,9 +13,9 @@
 
 ### Fixed
 
-- Keep sync changelog regeneration consistent with the release gate ([pm-http-sync-changelog](https://github.com/unbraind/pm-http/blob/main/.agents/pm/issues/pm-http-sync-changelog.toon))
 - Distinguish exact serialized byte costs from heuristic token estimates in difference packets ([pm-http-33ck](https://github.com/unbraind/pm-http/blob/main/.agents/pm/issues/pm-http-33ck.toon))
 
 ### Other
 
 - Build task-scoped HTTP investigation context ([pm-http-76jn](https://github.com/unbraind/pm-http/blob/main/.agents/pm/epics/pm-http-76jn.toon))
+- Close delivered items and return idle in-progress items to open (2026-11-14 sweep) ([pm-http-sweep-1114](https://github.com/unbraind/pm-http/blob/main/.agents/pm/chores/pm-http-sweep-1114.toon))
