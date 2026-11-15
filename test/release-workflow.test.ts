@@ -62,3 +62,14 @@ test('package-owned approval and preparation inputs are preserved', () => {
   "release-enabled": "${{ github.ref == 'refs/heads/main' && vars.PM_HTTP_RELEASE_ENABLED == 'true' }}"
 });
 });
+
+// The pinned transaction derives the npm coordinate from the caller's package.json.
+test('release caller retains package-derived scoped npm identity', () => {
+  const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { name: string };
+  assert.equal(pkg.name, '@unbrained/pm-http');
+  assert.ok(text.includes(`npm identity is derived from package.json: ${pkg.name}.`));
+  assert.equal(caller.jobs.release.with['npm-project-dir'] ?? '.', '.');
+  assert.equal(Object.hasOwn(caller.jobs.release.with, 'package-name'), false);
+  assert.equal(Object.hasOwn(caller.jobs.release.with, 'npm-publish'), false);
+  assert.equal(Object.hasOwn(caller.jobs.release.with, 'bun-verify'), false);
+});

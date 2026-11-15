@@ -6,23 +6,57 @@ Keep an HTTP investigation as task context: what request was explicitly declared
 
 ## Install
 
-Requires Node 22.18+ or Bun and pm 2026.10.28+. The development pin is exactly 2026.10.28. The following registry commands apply after the first approved release; during review substitute the local packed tarball for `pm-http`.
+The npm package is `@unbrained/pm-http`. Manifest identity and catalog display name remain `pm-http`; existing `pm http` commands do not change. The homepage remains <https://github.com/unbraind/pm-http#readme>.
+
+Requires Node 22.18+ or Bun and pm 2026.10.28+. The packed consumer host is pinned to 2026.10.28. Registry commands become available after the first approved release. With a host already installed and a tracker initialized:
 
 ```sh
-pm package install pm-http
-
-# npm / npx
-npm install --save-dev @unbrained/pm-cli@2026.10.28 pm-http
-npx pm package install pm-http
-npx pm http probe list task-id
-
-# Bun / bunx
-bun add --dev @unbrained/pm-cli@2026.10.28 pm-http
-bunx --bun pm package install pm-http
-bunx --bun pm http probe list task-id
+pm install npm:@unbrained/pm-http
+# Equivalent current spelling:
+pm package install npm:@unbrained/pm-http
 ```
 
-For local development: `npm ci`, `npm run build`, `npm pack`, then install that `.tgz` into a scratch project with npm or Bun and run `pm package install <tarball>`. `npm run test:install` proves npm, Bun, npx, bunx and the exported SDK against one packed artifact in non-git projects.
+The `npm:` prefix selects the registry. Bare `pm install @unbrained/pm-http` is interpreted as a local source by the pinned host. Package-manager installation alone does not activate the extension.
+
+For separate fresh npm and Bun projects outside any Git repository:
+
+```sh
+npm install --save-dev @unbrained/pm-cli@2026.10.28 @unbrained/pm-http
+npx --no-install pm init http-consumer --defaults --agent-guidance skip
+npx --no-install pm package install ./node_modules/@unbrained/pm-http
+npx --no-install pm http probe list task-id
+
+bun add --dev @unbrained/pm-cli@2026.10.28 @unbrained/pm-http
+bunx --bun --no-install pm init http-consumer --defaults --agent-guidance skip
+bunx --bun --no-install pm package install ./node_modules/@unbrained/pm-http
+bunx --bun --no-install pm http probe list task-id
+```
+
+Replace `task-id` with an existing item ID. Global SDK installation is also available after publication:
+
+```sh
+npm i -g @unbrained/pm-http
+bun add -g @unbrained/pm-http
+```
+
+This extension has no standalone executable: `npx @unbrained/pm-http` and `bunx @unbrained/pm-http` cannot run it directly. Invoke the pm host in an initialized tracker instead:
+
+```sh
+npx --package @unbrained/pm-cli pm install npm:@unbrained/pm-http
+bunx --bun --package @unbrained/pm-cli pm install npm:@unbrained/pm-http
+```
+
+For review before publication, run `npm ci`, `npm run build`, and `npm pack` in the package checkout. Copy `unbrained-pm-http-2026.10.29.tgz` into a fresh directory outside any Git repository, then run:
+
+```sh
+npm install ./unbrained-pm-http-2026.10.29.tgz @unbrained/pm-cli@2026.10.28
+npx --no-install pm init http-consumer --defaults --agent-guidance skip
+npx --no-install pm install ./unbrained-pm-http-2026.10.29.tgz
+npx --no-install pm create Task 'Synthetic HTTP investigation' --id http-proof
+npx --no-install pm http probe list http-proof --json
+```
+
+Use `bun add` and `bunx --bun --no-install pm` for a separate Bun consumer. `npm run test:install` proves npm, Bun, npx, bunx and the exported SDK against the same packed artifact in fresh non-git projects, including a real synthetic request and contract comparison.
 
 ## Agent instructions
 
@@ -93,7 +127,7 @@ All functions take the existing item ID and explicit options. They perform no gi
 import {
   addProbe, reviewProbe, listProbes, preview, send, setContract,
   observations, compare, differencePacket, missingEvidence, HttpError,
-} from 'pm-http';
+} from '@unbrained/pm-http';
 
 const options = { workspace: pmRoot, author: 'investigator' };
 await addProbe(itemId, 'api', {
