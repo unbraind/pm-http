@@ -1,0 +1,34 @@
+id: pm-http-ci-v2
+title: Split quick PR checks from exhaustive ARM64 deep CI
+description: "Fleet CI v2, companion pm-cli-website-dyhg. Preserve required test (22), test (26), codeql and existing fork-safe PR runner routing. Use one quick npm gate on Node 26, floor tests on 22 and full npm/Bun gates on the ARM64 deep pool. Preserve exact byte-boundary contracts and coverage thresholds."
+type: Task
+status: in_progress
+priority: 2
+tags[3]: ci,"gh:unbraind/pm-http#34",performance
+created_at: "2026-11-15T15:18:55.062Z"
+updated_at: "2026-11-15T19:03:55.013Z"
+author: codex-sol
+acceptance_criteria: Every existing gate remains in a documented tier; PR names and ARM64 routing remain unchanged; quick coverage thresholds remain unchanged
+comments[6]{created_at,author,text}:
+  "2026-11-15T15:18:58.879Z",codex-sol,"No existing CI or flaky-gate item matched; release-caller rollout is explicitly out of scope. Latest successful main 43712552108: test (26) wall 35m16s/execution 32m41s, test (22) wall 88m36s/execution 21m21s. Slowest exact byte-boundary test took 128.12-129.86s; concurrent admission 63.74-63.85s. These finite product boundary fixtures remain complete. Only two repetitive 128-case generated corpora get quick prefixes. Required CodeQL stays unfiltered; release workflows and verifier scripts stay unchanged."
+  "2026-11-15T15:22:01.112Z",codex-sol,"PR routing expression and fork guard are preserved byte-for-byte. Both PR/deep local setups skip hosted cache restoration and use the image Bun. Cheap docs CI retains strict health, identity, changelog, tooling/docs tests and the exact public package allowlist. The packed acceptance already proves npm/Bun/npx/bunx and SDK installs. All scaled values are harness-only, with the process budget validated before spawn; product timeoutMs and DNS contracts stay unchanged. Strict YAML parse passed; actionlint is unavailable. Local quick coverage is running directly; full depth is reserved for deep CI."
+  "2026-11-15T15:30:48.327Z",codex-sol,"Direct PM_TEST_DEPTH=quick PM_TEST_TIME_SCALE=3 npm run coverage passed 151/151 tests, no skips/cancellations, in 527.65s suite time. All 20 authored source files, including scripts, retain exactly 100% statements/branches/functions/lines. Exact admission boundary passed in 123.09s and concurrent admission in 82.50s; finite contract fixtures remain intact. Local Node is 24; Node 22/26 and full-depth certification remain CI evidence. Typecheck/lint rerun passed after consolidating the helper import. Identity and strict YAML checks passed. Local strict health fails only on the host-global extension/SDK version skew. PR 34 CI/CodeQL are queued and are not awaited; completed PR job wall times are unavailable. PR harness scale is also 3 for the existing local runner pool, with unchanged product deadlines."
+  "2026-11-15T18:50:16.723Z",codex-sol,"Round C: verify the supplied review findings, repair failing checks, audit CI tier boundaries and harness controls, and run focused gates. Review threads remain untouched; no merge or closure."
+  "2026-11-15T18:56:52.920Z",codex-sol,"TLS environment finding is valid: replacement child environments now forward PM_TEST_TIME_SCALE, with an environment regression and assertion in the real TLS subprocess. Product timeoutMs remains unscaled. Self-review checks documentation/privacy/identity gates, unscaled product budgets, integer timeouts, validation before spawn, platform filenames and generated-only quick thresholds."
+  "2026-11-15T19:03:54.166Z",codex-sol,"Round C validation passed: typecheck, test TypeScript compilation, focused behavior and workflow/tooling suites, strict unique-key YAML parsing, and package changelog regeneration/check. Lint passed where the package provides a lint script; packages without one passed their existing docstring gate. No configured coverage source changed, so no package coverage run was added. Existing isolated coverage-tooling fixtures are part of the focused tooling suites. All supplied review findings are valid and repaired. Self-review additionally preserves executable tracker scans and all applicable docs/privacy/identity/package/attestation gates. Product budgets and coverage thresholds remain unchanged. Validation uses the local Node 24 runtime; Node 22/26, native Windows and deep runtime certification remain CI evidence. Threads untouched; no merge or item closure. Release ownership after recording this evidence."
+files[8]{path,scope}:
+  .github/workflows/ci-deep.yml,project
+  .github/workflows/ci.yml,project
+  test/depth.test.ts,project
+  test/helpers.ts,project
+  test/lifecycle.test.ts,project
+  test/processes.test.ts,project
+  test/support/depth.ts,project
+  test/wire-fixture.ts,project
+tests[3]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  npm run typecheck && npm run lint,project,1200,codex-sol,"2026-11-15T15:19:48.262Z",local_mutation,ci/quick-pr-tier-deep-local-tier
+  PM_TEST_DEPTH=quick PM_TEST_TIME_SCALE=3 npm run coverage,project,1200,codex-sol,"2026-11-15T15:20:13.109Z",local_mutation,ci/quick-pr-tier-deep-local-tier
+  "npm run typecheck && npm run lint --if-present && npm run build && npm run build:test && PM_TEST_DEPTH=quick node --test --test-concurrency=2 test/lifecycle.test.ts test/depth.test.ts test/workflow.test.ts test/tooling.test.ts test/release-workflow.test.ts && node --input-type=module -e 'import {readFileSync,readdirSync} from \"node:fs\"; import {parseDocument} from \"yaml\"; for(const file of readdirSync(\".github/workflows\").filter(f=>/\\.ya?ml$/.test(f))){ const d=parseDocument(readFileSync(\".github/workflows/\"+file,\"utf8\"),{uniqueKeys:true}); if(d.errors.length) throw new Error(file+\": \"+d.errors.join(\";\")); } console.log(\"Strict workflow YAML passed\");'",project,900,codex-sol,"2026-11-15T18:57:02.222Z",local_mutation,ci/quick-pr-tier-deep-local-tier
+docs[1]{path,scope}:
+  docs/ci-tiers.md,project
+body: ""
