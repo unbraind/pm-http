@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 30
     env:
       PM_TEST_DEPTH: quick
+      PM_TEST_TIME_SCALE: 3
     strategy:
       fail-fast: false
       matrix:

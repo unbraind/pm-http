@@ -3,7 +3,7 @@
 Required checks remain `test (22)`, `test (26)` and `codeql`. PR/manual CI
 preserves the original `PM_LOCAL_RUNNER` expression exactly: authorized same-repo
 PRs use the selected local x64/ARM64 pool and fork PRs fall back to hosted Ubuntu.
-Each PR job has a 30-minute limit and superseded PR runs cancel. Required CodeQL
+Each PR job has a 30-minute limit, harness scale 3 for the local pool, and superseded PR runs cancel. Required CodeQL
 is unfiltered, keeps Monday 01:47 UTC, and has a 30-minute limit.
 
 | Check | Code PR 22 | Code PR 26 | Docs/tracker PR, both | Deep 22 + 26 |
@@ -58,3 +58,11 @@ admission at 128.12–129.86s, concurrent admission at 63.74–63.85s, packed np
 at 77.35–79.21s and packed Bun/bunx at 54.84–59.03s. These are historical ARM64
 measurements, not a same-host quick/full comparison. Full depth is not run
 locally; the task and PR record quick proof and available PR CI timing.
+
+Local quick coverage passed 151/151 tests in 527.65s suite time, with exactly
+100% in all four dimensions across all 20 authored source files. Exact admission
+boundary took 123.09s and concurrent admission 82.50s. Local Node was 24; these
+are not same-host full/quick or Node 22/26 comparisons. Full depth stays deferred
+to deep CI. Local strict health reports a host-global extension/SDK skew; the
+strict CI gate is retained for independent runner evidence. No product flake was
+found; scaled harness guards address slow scheduling without relaxing contracts.

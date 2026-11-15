@@ -6,18 +6,19 @@ status: in_progress
 priority: 2
 tags[2]: ci,performance
 created_at: "2026-11-15T15:18:55.062Z"
-updated_at: "2026-11-15T15:22:01.113Z"
-assignee: codex-sol
-claim_principal: codex-sol
+updated_at: "2026-11-15T15:30:54.176Z"
 author: codex-sol
 acceptance_criteria: Every existing gate remains in a documented tier; PR names and ARM64 routing remain unchanged; quick coverage thresholds remain unchanged
-comments[2]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-11-15T15:18:58.879Z",codex-sol,"No existing CI or flaky-gate item matched; release-caller rollout is explicitly out of scope. Latest successful main 43712552108: test (26) wall 35m16s/execution 32m41s, test (22) wall 88m36s/execution 21m21s. Slowest exact byte-boundary test took 128.12-129.86s; concurrent admission 63.74-63.85s. These finite product boundary fixtures remain complete. Only two repetitive 128-case generated corpora get quick prefixes. Required CodeQL stays unfiltered; release workflows and verifier scripts stay unchanged."
   "2026-11-15T15:22:01.112Z",codex-sol,"PR routing expression and fork guard are preserved byte-for-byte. Both PR/deep local setups skip hosted cache restoration and use the image Bun. Cheap docs CI retains strict health, identity, changelog, tooling/docs tests and the exact public package allowlist. The packed acceptance already proves npm/Bun/npx/bunx and SDK installs. All scaled values are harness-only, with the process budget validated before spawn; product timeoutMs and DNS contracts stay unchanged. Strict YAML parse passed; actionlint is unavailable. Local quick coverage is running directly; full depth is reserved for deep CI."
-files[3]{path,scope}:
+  "2026-11-15T15:30:48.327Z",codex-sol,"Direct PM_TEST_DEPTH=quick PM_TEST_TIME_SCALE=3 npm run coverage passed 151/151 tests, no skips/cancellations, in 527.65s suite time. All 20 authored source files, including scripts, retain exactly 100% statements/branches/functions/lines. Exact admission boundary passed in 123.09s and concurrent admission in 82.50s; finite contract fixtures remain intact. Local Node is 24; Node 22/26 and full-depth certification remain CI evidence. Typecheck/lint rerun passed after consolidating the helper import. Identity and strict YAML checks passed. Local strict health fails only on the host-global extension/SDK version skew. PR 34 CI/CodeQL are queued and are not awaited; completed PR job wall times are unavailable. PR harness scale is also 3 for the existing local runner pool, with unchanged product deadlines."
+files[5]{path,scope}:
   .github/workflows/ci-deep.yml,project
   .github/workflows/ci.yml,project
+  test/processes.test.ts,project
   test/support/depth.ts,project
+  test/wire-fixture.ts,project
 tests[2]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
   npm run typecheck && npm run lint,project,1200,codex-sol,"2026-11-15T15:19:48.262Z",local_mutation,ci/quick-pr-tier-deep-local-tier
   PM_TEST_DEPTH=quick PM_TEST_TIME_SCALE=3 npm run coverage,project,1200,codex-sol,"2026-11-15T15:20:13.109Z",local_mutation,ci/quick-pr-tier-deep-local-tier
