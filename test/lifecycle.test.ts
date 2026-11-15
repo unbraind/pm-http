@@ -1,3 +1,4 @@
+import { testTime } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFile } from 'node:child_process';
@@ -70,7 +71,7 @@ test('real no-git host emits terminal upgrade uncertainty in both formats and ex
   await addProbe(f.item, 'upgrade', { url: s.url + '/idle', boundary: s.url, timeoutMs: 250 }, f.options);
   for (const format of [[], ['--json']]) {
     const args = [join(import.meta.dirname, '../node_modules/.bin/pm'), 'http', 'send', f.item, 'upgrade', '--operation', format.length === 0 ? 'toon' : 'json', ...format];
-    const result = await promisify(execFile)(process.execPath, args, { cwd: f.root, env: environment(f.root, f.workspace), timeout: 30000 });
+    const result = await promisify(execFile)(process.execPath, args, { cwd: f.root, env: environment(f.root, f.workspace), timeout: testTime(30000) });
     const decoded = (format.length === 0 ? decodeToon(result.stdout) : JSON.parse(result.stdout)) as { observation: { outcome: string; retry: { automaticRetries: number } } };
     assert.equal(decoded.observation.outcome, 'uncertain'); assert.equal(decoded.observation.retry.automaticRetries, 0); assert.equal((result.stdout + result.stderr).includes(s.secret), false);
   }
@@ -82,6 +83,6 @@ test('verified HTTPS uses the same terminal upgrade handling and retains availab
   await promisify(execFile)('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=localhost', '-addext', 'subjectAltName=IP:127.0.0.1', '-keyout', key, '-out', cert]);
   const s = await wireServer(t, { key: await readFile(key), cert: await readFile(cert) }); const script = join(f.root, 'tls-upgrade.ts');
   await writeFile(script, `import { capture } from ${JSON.stringify(new URL('../src/transport.ts', import.meta.url).href)};\nimport { makeProbe } from ${JSON.stringify(new URL('../src/policy.ts', import.meta.url).href)};\nimport { bounded } from ${JSON.stringify(new URL('./wire-fixture.ts', import.meta.url).href)};\nconst result=await bounded(capture('tls',makeProbe('tls',{url:${JSON.stringify(s.url + '/idle')},boundary:${JSON.stringify(s.url)},timeoutMs:1000})));\nif(result.outcome!=='uncertain'||result.timing.tls===undefined||!result.retry.reason.includes('upgrade'))throw Error('TLS upgrade lifecycle failed');\nconsole.log(JSON.stringify(result));\n`);
-  const result = await promisify(execFile)(process.execPath, [script], { cwd: f.root, env: { ...environment(f.root, f.workspace), NODE_EXTRA_CA_CERTS: cert }, timeout: 30000 });
+  const result = await promisify(execFile)(process.execPath, [script], { cwd: f.root, env: { ...environment(f.root, f.workspace), NODE_EXTRA_CA_CERTS: cert }, timeout: testTime(30000) });
   assert.equal(result.stdout.includes(s.secret), false); assert.equal(s.calls.length, 1);
 });

@@ -1,3 +1,4 @@
+import { testTime } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
@@ -10,12 +11,13 @@ import { investigation, environment } from './helpers.ts';
 
 /** Run a real independent investigator, optionally killing it at a durable protocol boundary. */
 async function child(root: string, workspace: string, item: string, operation: string, crash?: Step): Promise<boolean> {
+  const deadline = testTime(180000);
   const file = join(root, `send-${operation}-${randomUUID()}.ts`);
   await writeFile(file, `import { send, HttpError } from ${JSON.stringify(new URL('../index.ts', import.meta.url).href)};\ntry { await send(${JSON.stringify(item)}, 'api', {workspace:process.env.PM_PATH!,author:'fixture',operationId:${JSON.stringify(operation)},boundary:async step=>{if(step===${JSON.stringify(crash)}){setInterval(()=>{},1000);console.log('crash-ready');await new Promise<void>(()=>{});}}}); console.log('finished'); } catch(error) { if(error instanceof HttpError && error.code==='conflict') process.exitCode=3; else throw error; }\n`);
   return new Promise<boolean>((resolve, reject) => {
     const instance = spawn(process.execPath, [file], { cwd: root, env: environment(root, workspace), stdio: ['ignore', 'pipe', 'pipe'] });
     let output = ''; let error = ''; let killed = false;
-    const timeout = setTimeout(() => { instance.kill('SIGKILL'); reject(new Error('Synthetic investigator deadline exceeded')); }, 180000);
+    const timeout = setTimeout(() => { instance.kill('SIGKILL'); reject(new Error('Synthetic investigator deadline exceeded')); }, deadline);
     instance.stdout.on('data', chunk => { output += String(chunk); if (crash !== undefined && output.includes('crash-ready') && !killed) { killed = true; instance.kill('SIGKILL'); } });
     instance.stderr.on('data', chunk => { error += String(chunk); });
     instance.on('error', reject); instance.on('exit', (code, signal) => { clearTimeout(timeout); if (crash === undefined && code === 3) resolve(false); else if (crash === undefined ? code === 0 : killed && signal === 'SIGKILL') resolve(true); else reject(new Error(`Synthetic investigator failed: ${error}`)); });

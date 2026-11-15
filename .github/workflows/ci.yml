@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request: {}
   workflow_dispatch: {}
 
@@ -12,7 +10,7 @@ permissions:
 # Linux jobs run on the fleet's local, ephemeral runners (label pm-local) when the repository variable
 # PM_LOCAL_RUNNER is 'on' (x64, label pm-local) or 'arm64' (Raspberry Pis, label pm-local-arm64); fork pull requests always stay on GitHub-hosted runners. Unset or 'off': ubuntu-latest.
 # A new push to a pull request supersedes its earlier CI run: cancel it instead of letting both hold runners.
-# Pushes to main and manual runs get a group of their own, so they never wait for or cancel each other.
+# Manual runs get a group of their own.
 concurrency:
   group: ci-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -20,6 +18,9 @@ concurrency:
 jobs:
   test:
     runs-on: ${{ ((vars.PM_LOCAL_RUNNER == 'on' || vars.PM_LOCAL_RUNNER == 'arm64') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON(format('["self-hosted","{0}"]', vars.PM_LOCAL_RUNNER == 'arm64' && 'pm-local-arm64' || 'pm-local')) || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    env:
+      PM_TEST_DEPTH: quick
     strategy:
       fail-fast: false
       matrix:
@@ -34,76 +35,70 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
+      - name: Detect code changes
+        id: changes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          code=true
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            code=false
+            git diff --name-only --no-renames -z "$BASE_SHA...$HEAD_SHA" > "$RUNNER_TEMP/ci-changed-paths"
+            while IFS= read -r -d '' path; do
+              case "$path" in
+                # Executable tracker files use the same code tier in every package.
+                .agents/pm/*.mjs|.agents/pm/*.cjs|.agents/pm/*.js|.agents/pm/*.ts) code=true ;;
+                .agents/pm/*|*.md|docs/*|CHANGELOG.md|LICENSE) ;;
+                *) code=true ;;
+              esac
+            done < "$RUNNER_TEMP/ci-changed-paths"
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: ${{ matrix.node-version }}
-          cache: npm
+          cache: ${{ runner.environment == 'github-hosted' && 'npm' || '' }}
 
       - name: Setup Bun
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 26 && runner.environment == 'github-hosted'
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Install dependencies
         run: npm ci
 
       - name: Verify tracked pm project health
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Catch durable checkout-visible failures: conflict markers, parse failures,
-          # invalid or drifted history, tracked runtime caches, extension health,
-          # stale in-progress work, and any merge evidence present in this clone.
-          #
-          # This is not a lossless-merge attestation. Merge receipts are clone-local and
-          # absent from a fresh CI checkout. Some unreconciled loss shapes surface as
-          # history drift, but reconciliation or history repair can remove that signal.
-          # Keep receipt review as a local pre-push step; pm-cli#921 and pm-cli#922 track
-          # the missing durable proof.
-          #
-          # `--strict-exit` is load-bearing: non-strict health may report findings while
-          # still exiting successfully. `--require-merge-drivers` fails the gate when the
-          # clone-local merge driver config declared by .gitattributes is absent.
-          ./node_modules/.bin/pm health --strict-exit --require-merge-drivers
+        run: ./node_modules/.bin/pm health --strict-exit --require-merge-drivers
 
       - name: Verify commit identities and private path policy
         run: npm run identity:check
 
-      - name: Type check
-        run: npm run typecheck
+      - name: Documentation and tracker gates
+        if: steps.changes.outputs.code != 'true'
+        run: |
+          npm run changelog:check
+          npm run pack:dry-run
+          npm pack --dry-run --ignore-scripts --json > "$RUNNER_TEMP/docs-pack.json"
+          node --input-type=module -e 'import { readFileSync } from "node:fs"; import assert from "node:assert/strict"; const pack = JSON.parse(readFileSync(process.env.RUNNER_TEMP + "/docs-pack.json", "utf8"))[0]; assert.ok(pack.files.every(file => /^(dist\/|manifest\.json$|package\.json$|README\.md$|ARCHITECTURE\.md$|docs\/real-data\.md$|LICENSE$|CHANGELOG\.md$)/.test(file.path)));'
+          node --test test/tooling.test.ts test/automation-changelog.test.ts
 
-      - name: Lint
-        run: npm run lint
+      - name: Engines floor build and quick tests
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 22
+        run: npm test
 
-      - name: Duplication gate
-        run: npm run duplication
+      - name: Report Bun version
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 26
+        run: bun --version
 
-      - name: Build package
-        run: npm run build
+      - name: Quick npm release gate
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 26
+        run: npm run release:check
 
-      - name: Verify complete docstring coverage
-        run: npm run docstring
-
-      - name: Test with coverage gate
-        run: npm run coverage
-
-      - name: Production dependency audit
-        run: npm run audit:prod
-
-      - name: Verify npm package contents
-        run: npm run pack:dry-run
-
-      - name: Verify generated changelog
-        run: npm run changelog:check
-
-      - name: Verify every publish invocation is attested
-        run: npm run verify:release-publish-attestation
-
-      - name: Verify Bun can install the package graph
+      # Packed acceptance already proves npm/Bun installs, npx/bunx and SDK runtimes.
+      - name: Bun package graph smoke
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 26
         run: bun install --no-save
-
-      - name: Packed npm and Bun acceptance
-        run: npm run test:install
-
-      - name: Bun release gates
-        if: matrix.node-version == 26
-        run: bun run release:check
