@@ -52,4 +52,4 @@ export async function extension(workspace: string) {
   await writeFile(join(dir, 'entry.js'), `export { default } from ${JSON.stringify(new URL('../index.ts', import.meta.url).href)};\n`);
 }
 /** Ensure no git executable or enclosing repository is available to native command paths. */
-export function environment(root: string, workspace: string) { return { PATH: root, PM_PATH: workspace, PM_AUTHOR: 'fixture', GIT_CEILING_DIRECTORIES: dirname(root), NODE_V8_COVERAGE: process.env.NODE_V8_COVERAGE }; }
+export function environment(root: string, workspace: string) { return { PATH: root, PM_PATH: workspace, PM_AUTHOR: 'fixture', GIT_CEILING_DIRECTORIES: dirname(root), PM_TEST_TIME_SCALE: process.env.PM_TEST_TIME_SCALE, NODE_V8_COVERAGE: process.env.NODE_V8_COVERAGE }; }
