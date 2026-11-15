@@ -1,5 +1,5 @@
 {
-  "name": "pm-http",
+  "name": "@unbrained/pm-http",
   "version": "2026.10.29",
   "description": "Task-scoped HTTP investigation evidence, bounded contracts and difference packets",
   "repository": {
@@ -98,7 +98,7 @@
       ],
       "links": {
         "docs": "https://github.com/unbraind/pm-http#readme",
-        "npm": "https://www.npmjs.com/package/pm-http",
+        "npm": "https://www.npmjs.com/package/@unbrained/pm-http",
         "repository": "https://github.com/unbraind/pm-http",
         "report": "https://github.com/unbraind/pm-http/issues"
       }

@@ -1,4 +1,5 @@
 # Shared release transaction pinned to a verified canonical release.
+# npm identity is derived from package.json: @unbrained/pm-http.
 name: Daily Release
 on:
   workflow_dispatch:

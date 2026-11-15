@@ -1,0 +1,30 @@
+id: pm-http-scoped-npm-name
+title: Publish pm-http as @unbrained/pm-http
+description: npm rejected the first unscoped publish with E403 because pm-http is too similar to pmhttp. Adopt the owner-selected scoped npm coordinate while preserving extension identity and commands.
+type: Chore
+status: in_progress
+priority: 2
+tags[2]: npm,release
+created_at: "2026-11-15T20:03:28.345Z"
+updated_at: "2026-11-15T20:12:11.093Z"
+author: codex-sol
+acceptance_criteria: "Scoped metadata, installation docs and release contracts agree; npm and Bun tarball consumers activate the extension and run a real synthetic investigation in fresh non-git trackers; targeted gates pass and a ready PR opens without merge or publication."
+comments[3]{created_at,author,text}:
+  "2026-11-15T20:03:38.916Z",codex-sol,"Follow pm-lint PR 29: change npm metadata, lockfile, catalog npm link, SDK imports and installation paths only; preserve manifest, display name, commands, homepage and public publish access. The same pinned pm-ops workflow derives package coordinates from package.json; retain its inputs and pin. Verify npm/Bun pack and packed consumer investigations through npx/bunx, then targeted gates and changelog. Keep CI v2 workflows untouched; check the shared runner hold before pushing. No coverage source changes are planned."
+  "2026-11-15T20:09:21.972Z",codex-sol,"Direct targeted tests pass 52/52; the same linked suite passes 52/52 through pm test with tracker context and source workspace. Typecheck, lint, scoped pack dry-run (47 files) and canonical publish-attestation verification pass. Metadata regression checks preserve the original homepage, public access, manifest name and display identity. The pinned caller derives its npm coordinate and retains defaults and approval. Packed npm/Bun investigations are still running; no merge or publication."
+  "2026-11-15T20:12:08.277Z",codex-sol,"Packed acceptance passes 2/2 with zero skips: native npm and Bun packs retain the scoped identity; both managers install the same tarball into fresh non-git prefixes and activate manifest pm-http. Real npx/bunx probe, send, contract, comparison and diff commands pass; both comparisons report satisfies. Scoped SDK checks cover observed evidence, stale guards, withdrawal, upgrade recovery and pre-effect capacity refusal. Direct and linked targeted suites each pass 52/52; typecheck, lint, pack dry-run and publish-attestation pass. No coverage sources changed and no full repository coverage was run. Exact commands and outcomes are in docs/scoped-npm-validation.md. Release the claim and leave the item in progress for orchestrator verification. No merge or npm publication."
+files[7]{path,scope}:
+  .github/workflows/release.yml,project
+  CHANGELOG.md,project
+  package-lock.json,project
+  package.json,project
+  test/install.acceptance.ts,project
+  test/package-metadata.test.ts,project
+  test/release-workflow.test.ts,project
+tests[2]{command,scope,timeout_seconds,pm_context_mode,workspace_context_mode,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/package-metadata.test.ts test/release-workflow.test.ts test/workflow.test.ts test/tooling.test.ts test/automation-changelog.test.ts,project,300,tracker,source,codex-sol,"2026-11-15T20:05:37.168Z",local_mutation,chore/scoped-npm-name
+  "npm run test:install",project,1200,tracker,source,codex-sol,"2026-11-15T20:09:25.104Z",local_mutation,chore/scoped-npm-name
+docs[2]{path,scope}:
+  docs/scoped-npm-validation.md,project
+  README.md,project
+body: ""
