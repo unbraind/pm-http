@@ -1,0 +1,65 @@
+name: CI Deep
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-deep-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deep:
+    runs-on: ${{ vars.PM_LOCAL_DEEP != 'off' && fromJSON('["self-hosted","pm-local-arm64"]') || 'ubuntu-latest' }}
+    timeout-minutes: 120
+    env:
+      PM_TEST_DEPTH: full
+      PM_TEST_TIME_SCALE: 3
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 26]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: ${{ runner.environment == 'github-hosted' && 'npm' || '' }}
+
+      - name: Setup Bun
+        if: runner.environment == 'github-hosted'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+
+      - name: Report Bun version
+        run: bun --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tracked pm project health
+        run: ./node_modules/.bin/pm health --strict-exit --require-merge-drivers
+
+      - name: Verify commit identities and private path policy
+        run: npm run identity:check
+
+      - name: Full npm release gate
+        run: npm run release:check
+
+      - name: Full Bun release gate
+        run: bun run release:check
+
+      - name: Bun package graph smoke
+        run: bun install --no-save

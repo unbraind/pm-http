@@ -1,3 +1,4 @@
+import { testTime } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFile } from 'node:child_process';
@@ -13,7 +14,7 @@ import { environment, extension, server, tracker, contents } from './helpers.ts'
 
 const execute = promisify(execFile);
 /** Invoke the real host asynchronously so a real local server can answer. */
-async function cli(root: string, workspace: string, args: string[]) { return execute(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'http', ...args], { cwd: root, env: environment(root, workspace), timeout: 60000 }); }
+async function cli(root: string, workspace: string, args: string[]) { return execute(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'http', ...args], { cwd: root, env: environment(root, workspace), timeout: testTime(60000) }); }
 
 test('real native host runs every command without git, in TOON and JSON', async t => {
   const f = await tracker(t); await extension(f.workspace); let requests = 0;

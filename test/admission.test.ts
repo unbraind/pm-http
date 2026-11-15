@@ -1,3 +1,4 @@
+import { testDepth } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { PmClientFullMutationOptions } from '@unbrained/pm-cli/sdk';
@@ -184,7 +185,7 @@ test('JSON media-family detection is independent of display redaction, suffix, c
   }
   assert.ok((await compare(f.item, f.options)).comparisons.every(row => row.result === 'satisfies'));
   assert.equal((await contents(f.workspace)).includes(opaque), false);
-  for (let i = 0; i < 128; i++) assert.equal(jsonMediaType(['Content-Type', `application/vnd.fixture-${i}+json; ignored=opaque`], 1), true);
+  for (let i = 0; i < testDepth(128); i++) assert.equal(jsonMediaType(['Content-Type', `application/vnd.fixture-${i}+json; ignored=opaque`], 1), true);
   for (const type of ['text/json', 'application/notjson', 'application/+json', 'application/x+json-bad', 'application/bad type+json']) assert.equal(jsonMediaType(['content-type', type], 1), false);
   assert.equal(jsonMediaType(['etag', 'opaque', 'content-type', 'application/json'], 1), undefined);
 });

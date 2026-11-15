@@ -1,3 +1,4 @@
+import { testTime } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { createServer as httpServer } from 'node:http';
@@ -10,9 +11,10 @@ import { listen } from './helpers.ts';
 
 /** Fail by assertion when a transport promise outlives its deadline, without leaving a test waiting on it. */
 export async function bounded<T>(action: Promise<T>, milliseconds = 1500): Promise<T> {
+  const deadline = testTime(milliseconds);
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const result = await Promise.race([action.then(value => ({ value })), new Promise<{ pending: true }>(resolve => { timer = setTimeout(() => resolve({ pending: true }), milliseconds); })]);
+    const result = await Promise.race([action.then(value => ({ value })), new Promise<{ pending: true }>(resolve => { timer = setTimeout(() => resolve({ pending: true }), deadline); })]);
     assert.ok('value' in result, 'Transport did not settle after its timeout or terminal event'); return result.value;
   } finally { clearTimeout(timer); }
 }

@@ -20,3 +20,4 @@
 
 - Close delivered items and return idle in-progress items to open (2026-11-14 sweep) ([pm-http-sweep-1114](https://github.com/unbraind/pm-http/blob/main/.agents/pm/chores/pm-http-sweep-1114.toon))
 - Build task-scoped HTTP investigation context ([pm-http-76jn](https://github.com/unbraind/pm-http/blob/main/.agents/pm/epics/pm-http-76jn.toon))
+- Split quick PR checks from exhaustive ARM64 deep CI ([pm-http-ci-v2](https://github.com/unbraind/pm-http/blob/main/.agents/pm/tasks/pm-http-ci-v2.toon))

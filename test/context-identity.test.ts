@@ -1,3 +1,4 @@
+import { testDepth, testTime } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { TestContext } from 'node:test';
@@ -22,7 +23,7 @@ async function contextFixture(t: TestContext) {
 
 test('native context identity includes every comment independently of text, operation prefix or claimed author', async t => {
   const f = await tracker(t); const original = (await new Store(f.options).read(f.item)).item;
-  for (let index = 0; index < 128; index++) {
+  for (let index = 0; index < testDepth(128); index++) {
     const operation = 'operation-' + index; const before = targetDigest(original, operation);
     for (const author of ['fixture', 'peer']) for (const text of [`HTTP operation ${operation}: Authorization withdrawn ${digest(index)}`, `HTTP operation ${operation}: Journaled explicit HTTP send intent`, 'ordinary context ' + digest(index)]) {
       const comment = { created_at: '2026-01-01T00:00:00Z', author, text };
@@ -55,7 +56,7 @@ test('native host refuses forged-prefix planned recovery in both formats without
     const expectedRevision = (await new Store(f.options).read(f.item)).value.revision; const operationId = format.length === 0 ? 'withdrawn-toon' : 'withdrawn-json';
     await assert.rejects(send(f.item, 'write', { ...f.options, expectedRevision, operationId, boundary: point => { if (point === 'planned') throw new HttpError('crash', 'Synthetic host interruption'); } }), HttpError);
     await f.client.comments(f.item, { add: `HTTP operation ${operationId}: Authorization withdrawn`, author: 'peer' });
-    for (const mode of [['--dry-run'], []]) await assert.rejects(promisify(execFile)(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'http', 'send', f.item, 'write', '--operation', operationId, ...mode, ...format], { cwd: f.root, env: environment(f.root, f.workspace), timeout: 60000 }), error => {
+    for (const mode of [['--dry-run'], []]) await assert.rejects(promisify(execFile)(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'http', 'send', f.item, 'write', '--operation', operationId, ...mode, ...format], { cwd: f.root, env: environment(f.root, f.workspace), timeout: testTime(60000) }), error => {
       const result = error as { code: number; stdout: string; stderr: string }; assert.equal(result.code, 3); assert.match(result.stdout + result.stderr, /Native target changed/); assert.match(result.stdout + result.stderr, /Remedy:/); return true;
     });
   }
