@@ -6,16 +6,17 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-11-16T14:44:29.645Z"
-updated_at: "2026-11-16T16:12:07.856Z"
+updated_at: "2026-11-16T16:31:33.460Z"
 author: pi-glm
 acceptance_criteria: "The caller schedules a daily release cron next to the hourly reconcile; release-enabled requires the exact repository, main and vars.PM_RELEASE_APPROVED; The pinned reusable workflow SHA and its version comment stay unchanged; The workflow-contract tests assert the new gate and keep every other assertion"
-comments[6]{created_at,author,text}:
+comments[7]{created_at,author,text}:
   "2026-11-16T15:18:51.964Z",codex-sol,"Continuation: verified the existing worktree and remote branch state, preserved the earlier changes, and reused this item. Rerunning required gates to completion under the continuation author before committing results."
   "2026-11-16T15:25:12.152Z",codex-sol,"Root cause: only hourly reconciliation was scheduled, and release admission depended on an unset package-specific variable. Per owner approval, the npm first publish of @unbrained/pm-http and PM_RELEASE_APPROVED=true permit the standard daily caller. Added the daily cron and exact repository/main/owner-approval condition while preserving the reusable SHA, version comment, permissions and all other caller assertions."
   "2026-11-16T15:42:17.187Z",codex-sol,The first combined gate command hit its 20-minute timeout during shared-host disk contention and is not pass evidence. Retrying all gates to completion using memory-backed temporary fixtures and the existing harness deadline scale. Assertions and test selection are unchanged.
   "2026-11-16T15:57:54.575Z",codex-sol,"Workflow contracts passed. changelog:check then correctly required the new in-progress item in the generated changelog; regenerated it with the package generator and verified the diff is limited to this item entry. Rechecking the contracts and changelog together."
   "2026-11-16T16:02:01.528Z",codex-sol,"Before publication: typecheck and lint completed successfully. The focused workflow contract suite passed 7 tests, and changelog:check passed after generating the required in-progress item entry. The first full quick test command timed out under disk contention; its replacement is active and remains pending evidence. Publishing a draft for exact-head CI validation."
   "2026-11-16T16:11:59.374Z",codex-sol,"Implementation commit cf391429dd0b3da2c635390affcd5ef24392db70 contains the requested fix and package-owned regression contracts. Focused contracts and changelog verification passed; typecheck and lint or the existing docstring static gate passed. The first broad quick attempt timed out, and its replacement remains active. The shared runner dispatch hold is respected before publication. Releasing the claim for orchestrator verification."
+  "2026-11-16T16:31:24.384Z",codex-sol,"Complete local gate rerun passed: npm run typecheck && npm run lint && npm test && node --test test/release-workflow.test.ts && npm run changelog:check && git diff --check, with PM_TEST_DEPTH=quick and the existing deadline scale. All 7 workflow-contract tests passed. The earlier timeout is superseded by this completed run. Exact-head remote CI remains pending the shared dispatch hold."
 files[3]{path,scope}:
   .github/workflows/release.yml,project
   CHANGELOG.md,project
