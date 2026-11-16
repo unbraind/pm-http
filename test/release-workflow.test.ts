@@ -41,7 +41,7 @@ test('caller grants the shared transaction permissions without workflow-level pr
 });
 
 test('hourly continuation preserves manual release admission and retirement opt-in', () => {
-  assert.deepEqual(caller.on.schedule ?? [], [{"cron":"41 * * * *"}]);
+  assert.deepEqual(caller.on.schedule ?? [], [{"cron":"23 3 * * *"},{"cron":"41 * * * *"}]);
   assert.deepEqual(caller.on.workflow_dispatch.inputs['retire-unpublished'], { description: 'Retire only owned untouched unpublished intent', type: 'boolean', default: false });
   assert.equal(caller.jobs.release.with['reconcile-only'], "${{ (github.event_name == 'schedule' && github.event.schedule == '41 * * * *') || inputs.retire-unpublished == true }}");
   assert.equal(caller.jobs.release.with['retire-unpublished'], "${{ github.event_name == 'workflow_dispatch' && inputs.retire-unpublished == true }}");
@@ -59,7 +59,7 @@ test('package-owned approval and preparation inputs are preserved', () => {
   assert.deepEqual(caller.jobs.release.with, {
   "reconcile-only": "${{ (github.event_name == 'schedule' && github.event.schedule == '41 * * * *') || inputs.retire-unpublished == true }}",
   "retire-unpublished": "${{ github.event_name == 'workflow_dispatch' && inputs.retire-unpublished == true }}",
-  "release-enabled": "${{ github.ref == 'refs/heads/main' && vars.PM_HTTP_RELEASE_ENABLED == 'true' }}"
+  "release-enabled": "${{ github.repository == 'unbraind/pm-http' && github.ref == 'refs/heads/main' && vars.PM_RELEASE_APPROVED == 'true' }}"
 });
 });
 

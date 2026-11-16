@@ -6,8 +6,8 @@ released pm-ops validator and explicitly permits empty changelog sections in
 generation, checking and release notes. Dependabot covers the SHA through its
 root github-actions ecosystem.
 
-Package-owned inputs: `{"reconcile-only":"${{ (github.event_name == 'schedule' && github.event.schedule == '41 * * * *') || inputs.retire-unpublished == true }}","retire-unpublished":"${{ github.event_name == 'workflow_dispatch' && inputs.retire-unpublished == true }}","release-enabled":"${{ github.ref == 'refs/heads/main' && vars.PM_HTTP_RELEASE_ENABLED == 'true' }}"}`. Existing daily schedules
-are retained, with canonical hourly reconciliation where scheduled releases exist.
+Package-owned inputs: `{"reconcile-only":"${{ (github.event_name == 'schedule' && github.event.schedule == '41 * * * *') || inputs.retire-unpublished == true }}","retire-unpublished":"${{ github.event_name == 'workflow_dispatch' && inputs.retire-unpublished == true }}","release-enabled":"${{ github.repository == 'unbraind/pm-http' && github.ref == 'refs/heads/main' && vars.PM_RELEASE_APPROVED == 'true' }}"}`. The owner has approved the package, so a daily schedule posts
+approved releases while the hourly schedule only reconciles.
 
 Cross-repository npm OIDC was proven by the merged pm-jira pilot in
 [run 43639146392](https://github.com/unbraind/pm-jira/actions/runs/43639146392),

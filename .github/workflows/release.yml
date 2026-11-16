@@ -9,6 +9,7 @@ on:
         type: boolean
         default: false
   schedule:
+    - cron: 23 3 * * *
     - cron: 41 * * * *
 permissions: {}
 jobs:
@@ -26,5 +27,5 @@ jobs:
         '41 * * * *') || inputs.retire-unpublished == true }}
       retire-unpublished: ${{ github.event_name == 'workflow_dispatch' &&
         inputs.retire-unpublished == true }}
-      release-enabled: ${{ github.ref == 'refs/heads/main' &&
-        vars.PM_HTTP_RELEASE_ENABLED == 'true' }}
+      release-enabled: ${{ github.repository == 'unbraind/pm-http' && github.ref == 'refs/heads/main' &&
+        vars.PM_RELEASE_APPROVED == 'true' }}
