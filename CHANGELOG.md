@@ -23,3 +23,7 @@
 - Standardize the release gate on owner approval with a daily release schedule ([pm-http-0wf8](https://github.com/unbraind/pm-http/blob/main/.agents/pm/tasks/pm-http-0wf8.toon))
 - Publish pm-http as @unbrained/pm-http ([pm-http-scoped-npm-name](https://github.com/unbraind/pm-http/blob/main/.agents/pm/chores/pm-http-scoped-npm-name.toon))
 - Split quick PR checks from exhaustive ARM64 deep CI ([pm-http-ci-v2](https://github.com/unbraind/pm-http/blob/main/.agents/pm/tasks/pm-http-ci-v2.toon))
+
+### Closed
+
+- Closed: Expose exact packet byte costs and distinguish heuristic units from tokenizer counts ([pm-http-github-3c83aae34e57-5](https://github.com/unbraind/pm-http/blob/main/.agents/pm/issues/pm-http-github-3c83aae34e57-5.toon))
