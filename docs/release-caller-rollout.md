@@ -1,7 +1,7 @@
 # Pinned Daily Release rollout
 
-This package delegates release execution to pm-ops v2026.11.14 at
-`7687a35d7522482bd8361d60dbc2589e9afbc81c`. The package uses the matching
+This package delegates release execution to pm-ops v2026.11.18 at
+`c46a2419c63af3b348e6b559b0733ab0d9942cc7`. The package uses the matching
 released pm-ops validator and explicitly permits empty changelog sections in
 generation, checking and release notes. Dependabot covers the SHA through its
 root github-actions ecosystem.

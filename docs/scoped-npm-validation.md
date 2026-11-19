@@ -30,7 +30,7 @@ There is no standalone extension executable: npx/bunx invoke the pm host. The do
 
 ## Release and gates
 
-The reusable release remains pinned to pm-ops `7687a35d7522482bd8361d60dbc2589e9afbc81c`. Inspection of that exact workflow confirms there is no package-name input: packing, OIDC and npm metadata checks derive `package.json.name`; Bun receives the package identity from the release intent. The caller retains its project-root default, publication and Bun-verification defaults, permissions and maintainer approval gate.
+The reusable release pins pm-ops v2026.11.18 at `c46a2419c63af3b348e6b559b0733ab0d9942cc7`. Inspection of that exact workflow confirms there is no package-name input: packing, OIDC and npm metadata checks derive `package.json.name`; Bun receives the package identity from the release intent. The caller retains its project-root default, publication and Bun-verification defaults, permissions and maintainer approval gate.
 
 Targeted command:
 
