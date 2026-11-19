@@ -2,13 +2,13 @@
 
 Keep an HTTP investigation as task context: what request was explicitly declared, what was observed **at a recorded time**, which response contract it met, what changed, and what evidence is still missing. A resumed agent gets a compact difference packet instead of a transcript of raw responses.
 
-`pm-http` is a TypeScript [pm](https://github.com/unbraind/pm-cli) SDK extension. It sends requests only when explicitly asked. New package under local review; releases remain disabled until the maintainer approves.
+`pm-http` is a TypeScript [pm](https://github.com/unbraind/pm-cli) SDK extension. It sends requests only when explicitly asked.
 
 ## Install
 
 The npm package is `@unbrained/pm-http`. Manifest identity and catalog display name remain `pm-http`; existing `pm http` commands do not change. The homepage remains <https://github.com/unbraind/pm-http#readme>.
 
-Requires Node 22.18+ or Bun and pm 2026.10.28+. The packed consumer host is pinned to 2026.10.28. Registry commands become available after the first approved release. With a host already installed and a tracker initialized:
+Requires Node 22.18+ or Bun and pm 2026.10.28+. The packed consumer host is pinned to 2026.10.28. With a host already installed and a tracker initialized:
 
 ```sh
 pm install npm:@unbrained/pm-http
@@ -18,21 +18,23 @@ pm package install npm:@unbrained/pm-http
 
 The `npm:` prefix selects the registry. Bare `pm install @unbrained/pm-http` is interpreted as a local source by the pinned host. Package-manager installation alone does not activate the extension.
 
-For separate fresh npm and Bun projects outside any Git repository:
+To start a fresh project outside any Git repository, choose npm or Bun.
 
 ```sh
 npm install --save-dev @unbrained/pm-cli@2026.10.28 @unbrained/pm-http
 npx --no-install pm init http-consumer --defaults --agent-guidance skip
 npx --no-install pm package install ./node_modules/@unbrained/pm-http
-npx --no-install pm http probe list task-id
+npx --no-install pm http --help
+```
 
+```sh
 bun add --dev @unbrained/pm-cli@2026.10.28 @unbrained/pm-http
 bunx --bun --no-install pm init http-consumer --defaults --agent-guidance skip
 bunx --bun --no-install pm package install ./node_modules/@unbrained/pm-http
-bunx --bun --no-install pm http probe list task-id
+bunx --bun --no-install pm http --help
 ```
 
-Replace `task-id` with an existing item ID. Global SDK installation is also available after publication:
+For a global SDK installation, use npm or Bun.
 
 ```sh
 npm i -g @unbrained/pm-http
@@ -46,12 +48,17 @@ npx --package @unbrained/pm-cli pm install npm:@unbrained/pm-http
 bunx --bun --package @unbrained/pm-cli pm install npm:@unbrained/pm-http
 ```
 
-For review before publication, run `npm ci`, `npm run build`, and `npm pack` in the package checkout. Copy `unbrained-pm-http-2026.10.29.tgz` into a fresh directory outside any Git repository, then run:
+To evaluate a source commit, start in the checkout and install the packed archive in a fresh directory.
 
 ```sh
-npm install ./unbrained-pm-http-2026.10.29.tgz @unbrained/pm-cli@2026.10.28
+npm ci
+tarball=$(npm pack --silent)
+archive="$(pwd)/$tarball"
+consumer=$(mktemp -d -t pm-http.XXXXXX)
+cd "$consumer"
+npm install "$archive" @unbrained/pm-cli@2026.10.28
 npx --no-install pm init http-consumer --defaults --agent-guidance skip
-npx --no-install pm install ./unbrained-pm-http-2026.10.29.tgz
+npx --no-install pm package install ./node_modules/@unbrained/pm-http
 npx --no-install pm create Task 'Synthetic HTTP investigation' --id http-proof
 npx --no-install pm http probe list http-proof --json
 ```
