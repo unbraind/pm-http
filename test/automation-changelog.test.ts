@@ -29,7 +29,7 @@ test('the configured sync regeneration passes the package changelog check in a r
     run(process.execPath, [join(root, 'node_modules/.bin/pm'), 'create', 'Synthetic delivered change', '--id', 'fixture-work', '--type', 'Task', '--status', 'closed', '--close-reason', 'Synthetic release evidence', '--release', manifest.version, '--create-mode', 'progressive', '--no-extensions']);
     run('git', ['init', '--quiet']);
     run('git', ['add', 'package.json', '.agents/pm/settings.json']);
-    run('git', ['-c', 'user.name=SteveBot', '-c', 'user.email=1153461+unbraind@users.noreply.github.com', 'commit', '--quiet', '-m', 'Initialize synthetic changelog fixture']);
+    run('git', ['-c', 'user.name=unbrained', '-c', 'user.email=1153461+unbraind@users.noreply.github.com', 'commit', '--quiet', '-m', 'Initialize synthetic changelog fixture']);
     const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
     // The pinned reusable workflow adds this flag only for its default script.
     run(npm, ['run', script, ...(script === 'changelog:full' ? ['--', '--no-pending-release'] : [])]);
