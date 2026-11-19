@@ -52,7 +52,7 @@ To evaluate a source commit, start in the checkout and install the packed archiv
 
 ```sh
 npm ci
-tarball=$(npm pack --silent)
+tarball=$(npm pack --silent) && test -n "$tarball" && test -f "$tarball" || exit 1
 archive="$(pwd)/$tarball"
 consumer=$(mktemp -d -t pm-http.XXXXXX)
 cd "$consumer"
@@ -179,6 +179,11 @@ npm run test:real-data  # explicit public read-only requests, at most 20
 ```
 
 Release checks enforce 100% statements/branches/functions/lines across every authored source and tooling module, documented declarations, ESLint, zero duplication, production audit, an allowlisted package, generated pm-changelog output, publication attestation and packed consumers. Historical function proofs use the source checkout's Git history. Revert tests remove individual safety protections only in disposable copies and require behavioral failures, then rerun restored passing behavior. Tests use real SDK temp trackers and real node:http/HTTPS servers.
+
+Automated npm publication requires the maintainer to configure a GitHub Actions
+[trusted publisher](https://docs.npmjs.com/trusted-publishers/) for this repository
+with workflow filename `release.yml`. `PM_RELEASE_APPROVED=true` gates daily and manual
+releases on `main`. The trusted publisher authorizes the workflow to publish to npm through OIDC.
 
 ## Exit codes
 
