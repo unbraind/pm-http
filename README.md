@@ -51,16 +51,18 @@ bunx --bun --package @unbrained/pm-cli pm install npm:@unbrained/pm-http
 To evaluate a source commit, start in the checkout and install the packed archive in a fresh directory.
 
 ```sh
-npm ci
-tarball=$(npm pack --silent) && test -n "$tarball" && test -f "$tarball" || exit 1
-archive="$(pwd)/$tarball"
-consumer=$(mktemp -d -t pm-http.XXXXXX)
-cd "$consumer"
-npm install "$archive" @unbrained/pm-cli@2026.10.28
-npx --no-install pm init http-consumer --defaults --agent-guidance skip
-npx --no-install pm package install ./node_modules/@unbrained/pm-http
-npx --no-install pm create Task 'Synthetic HTTP investigation' --id http-proof
-npx --no-install pm http probe list http-proof --json
+(
+  npm ci
+  tarball=$(npm pack --silent) && test -n "$tarball" && test -f "$tarball" || exit 1
+  archive="$(pwd)/$tarball"
+  consumer=$(mktemp -d -t pm-http.XXXXXX)
+  cd "$consumer"
+  npm install "$archive" @unbrained/pm-cli@2026.10.28
+  npx --no-install pm init http-consumer --defaults --agent-guidance skip
+  npx --no-install pm package install ./node_modules/@unbrained/pm-http
+  npx --no-install pm create Task 'Synthetic HTTP investigation' --id http-proof
+  npx --no-install pm http probe list http-proof --json
+)
 ```
 
 Use `bun add` and `bunx --bun --no-install pm` for a separate Bun consumer. `npm run test:install` proves npm, Bun, npx, bunx and the exported SDK against the same packed artifact in fresh non-git projects, including a real synthetic request and contract comparison.

@@ -9,7 +9,7 @@ test('documented archive installs stop before installation when packing fails or
   const readme = readFileSync('README.md', 'utf8').replaceAll('\r\n', '\n');
   const blocks = [...readme.matchAll(/^```sh\n([\s\S]*?)^```$/gm)]
     .map(match => match[1])
-    .filter(block => /^tarball=|^(?:npm install|bun add) "\$archive"/m.test(block));
+    .filter(block => /^[ \t]*(?:tarball=|(?:npm install|bun add) "\$archive")/m.test(block));
   assert.ok(blocks.length > 0, 'The README must document an archive installation');
   const source = mkdtempSync(join(tmpdir(), 'readme-pack-'));
   t.after(() => rmSync(source, { recursive: true, force: true }));
@@ -38,14 +38,16 @@ mkdir() { printf 'mkdir\n' >&2; return 90; }
 mktemp() { printf 'mktemp\n' >&2; return 90; }
 `;
   for (const block of blocks) {
+    assert.match(block.trim(), /^\(\n[\s\S]*\n\)$/, 'The archive install must run in a subshell');
     for (const packResult of ['failed', 'empty', 'missing']) {
-      const result = spawnSync('sh', ['-c', `${stubs}\n${block}`, 'readme-pack', packResult], {
+      const result = spawnSync('sh', ['-c', `${stubs}\n${block}\nprintf 'shell continued: %s\\n' "$?"`, 'readme-pack', packResult], {
         cwd: source,
         encoding: 'utf8',
       });
       assert.ifError(result.error);
       assert.equal(result.stderr, 'pack\n', `${packResult}: only packing should run\n${block}`);
-      assert.equal(result.status, 1, `${packResult}: the snippet must exit with a failure`);
+      assert.equal(result.status, 0, `${packResult}: the calling shell must continue`);
+      assert.equal(result.stdout, 'shell continued: 1\n', `${packResult}: the snippet must return a failure`);
     }
   }
 });

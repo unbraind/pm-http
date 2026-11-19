@@ -6,9 +6,9 @@ status: open
 priority: 2
 tags[2]: "area:release","gh:unbraind/pm-ops#272"
 created_at: "2026-11-14T21:59:43.566Z"
-updated_at: "2026-11-19T13:41:21.820Z"
+updated_at: "2026-11-19T19:04:17.605Z"
 author: codex-ops272-1114
-comments[9]{created_at,author,text}:
+comments[11]{created_at,author,text}:
   "2026-11-14T21:59:48.191Z",codex-ops272-1114,"Orient and start the authorized fleet rollout. Verified released v2026.11.14 at 7687a35d7522482bd8361d60dbc2589e9afbc81c. Preserve this package approval, schedule, preparation and publication hooks through canonical inputs. The merged Jira pilot proves cross-repository npm identity acceptance; this package must still pass its own first-run preflight. Run caller contracts, installed attestation, strict YAML, actionlint and regenerated changelog checks. Shared-runner hold gates every push. No review-thread action, merge, dispatch or publication."
   "2026-11-14T22:10:49.912Z",codex-ops272-1114,"Rolled the Jira pilot contract into this package: released workflow pin 7687a35d7522482bd8361d60dbc2589e9afbc81c (v2026.11.14), exact pm-ops 2026.11.14 validator, explicit include-empty changelog generation/check/notes hooks, and declared yaml for caller tests. Preserved package-owned approval, schedule and preparation inputs. Focused gates passed 7/7, zero failures/skips; linked caller test passed 6/6 in a scratch pm project to avoid tracker run artifacts. Reverting only release.yml to the old copy in a disposable fixture failed 5 of 6 contracts. Actionlint passed 1/1, strict workflow/Dependabot YAML parsing 2/2, installed publish-attestation passed 1/1. Regenerate changelog and check after this final tracker write. Full npm/Bun certification remains with CI; no full local pass is claimed. Cross-repository npm OIDC evidence is Jira run 43639146392, recorded on pm-ops#272; first package activation must still pass its preflight. Every push waits on the shared-runner hold. No merge, dispatch, publication or review-thread action. Leave this item open and release only this author claim."
   "2026-11-19T02:04:20.701Z",codex-sol,"Daily Release candidate PR #40 for 2026.10.29 failed with Live publication identity disagrees. npm published at 2026-11-16T08:36:34.512Z before trusted preparation at 2026-11-17T12:04:08Z. No attestation, tag, GitHub Release or recorded workflow publication attempt exists for this intent. The protected merge matches the receipt. Read-only replay at c46a241 returns occupied and retains the historical receipt on retirement. Pin the shared workflow to v2026.11.18 with existing inputs and permissions."
@@ -18,6 +18,8 @@ comments[9]{created_at,author,text}:
   "2026-11-19T09:33:18.806Z",codex-sol,"Round DL updated the registry and local archive instructions. npm run build && npm run build:test && node --test --test-concurrency=2 test/package-metadata.test.ts test/release-workflow.test.ts test/tooling.test.ts passed (50 passing, 0 skipped). npm run typecheck, npm run docstring and npm run test:install passed. All 1 README archive example(s) executed successfully in fresh consumers with the version produced by the source checkout. The changelog generation and check passed with tags fetched."
   "2026-11-19T13:14:29.470Z",codex-sol,"Round DP follows up the archive installation and release documentation review. Verify pack failure and empty output with stubbed commands, and run the package installation and changelog gates directly."
   "2026-11-19T13:41:20.303Z",codex-sol,"Round DP verified the guarded README archive sequences, typecheck, docstring, packed installation, and changelog regeneration and check with fetched tags. Release documentation requires the npm trusted publisher for release.yml and records the separate repository approval gate. Leave this rollout item open and release its claim."
+  "2026-11-19T18:50:56.179Z",codex-sol,"Round EA scopes the README archive commands to a subshell. The regression tests will exercise pack failure, empty output, and a missing archive, and verify that the calling shell continues."
+  "2026-11-19T19:04:16.064Z",codex-sol,"Round EA: The README archive block runs in a subshell. Pack failure, empty output, and a missing archive each abort the archive commands before installation and return control to interactive Bash. README and documentation tests (1), docstring, typecheck, lint, packed install acceptance, and full changelog regeneration and check passed. The rollout item remains open."
 files[6]{path,scope}:
   .github/workflows/release.yml,project
   package-lock.json,project
@@ -25,7 +27,7 @@ files[6]{path,scope}:
   README.md,project
   test/readme.test.ts,project
   test/release-workflow.test.ts,project
-tests[10]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[12]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=2 test/release-workflow.test.ts,project,codex-ops272-1114,"2026-11-14T22:10:32.294Z",local_mutation,codex/ops272-fleet-1114
   "npm run changelog:check",project,codex-sol,"2026-11-19T02:04:43.575Z",local_mutation,ci/repin-daily-release-1119
   node --test --test-concurrency=2 test/tooling.test.ts,project,codex-sol,"2026-11-19T03:40:24.474Z",local_mutation,ci/repin-daily-release-1119
@@ -36,6 +38,8 @@ tests[10]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   "npm run build && npm run build:test && node --test --test-concurrency=2 test/package-metadata.test.ts test/release-workflow.test.ts test/tooling.test.ts",project,codex-sol,"2026-11-19T09:33:12.683Z",local_mutation,docs/version-independent-install
   node --test test/readme.test.ts,project,codex-sol,"2026-11-19T13:18:18.349Z",local_mutation,docs/readme-release-followups-1119
   "git fetch --tags origin && npm run changelog:full && npm run changelog:check",project,codex-sol,"2026-11-19T13:18:18.349Z",local_mutation,docs/readme-release-followups-1119
+  node --test --test-concurrency=2 test/readme.test.ts,project,codex-sol,"2026-11-19T19:02:33.583Z",local_mutation,docs/readme-release-followups-1119
+  npm run lint,project,codex-sol,"2026-11-19T19:02:33.583Z",local_mutation,docs/readme-release-followups-1119
 docs[3]{path,scope}:
   docs/release-caller-rollout.md,project
   docs/scoped-npm-validation.md,project
