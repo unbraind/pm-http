@@ -28,4 +28,4 @@ export { HttpError } from './src/core.ts';
 /** Documented integration and durable record contracts. */
 export type { Options, ProbeInput, Probe, Observation, Contract, Shape, State, Plan, Missing, Verdict, Step, Boundary, Review, CaptureReceipt } from './src/types.ts';
 /** Native host integration; no request runs on activation. */
-export default defineExtension({ name: 'pm-http', version: "2026.11.19", description: 'Task-scoped explicit HTTP investigation context', activate: register });
+export default defineExtension({ name: 'pm-http', version: "2026.11.20", description: 'Task-scoped explicit HTTP investigation context', activate: register });
