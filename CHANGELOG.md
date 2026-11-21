@@ -4,6 +4,7 @@
 
 ### Dependencies
 
+- Bump the pm-toolchain group with 2 updates ([#52](https://github.com/unbraind/pm-http/pull/52))
 - Bump @unbrained/pm-cli ([#48](https://github.com/unbraind/pm-http/pull/48))
 
 ## 2026.11.19 - 2026-11-19
