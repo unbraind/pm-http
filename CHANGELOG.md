@@ -1,6 +1,12 @@
 # Changelog
 
-## 2026.11.20 - 2026-11-20
+## Unreleased
+
+### Fixed
+
+- Deep CI fails changelog:check: the 2026.11.20 section date no longer matches the release tag date ([pm-http-tcwp](https://github.com/unbraind/pm-http/blob/main/.agents/pm/issues/pm-http-tcwp.toon))
+
+## 2026.11.20 - 2026-11-21
 
 ### Dependencies
 
