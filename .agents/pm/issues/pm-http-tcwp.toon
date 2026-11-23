@@ -1,0 +1,23 @@
+id: pm-http-tcwp
+title: "Deep CI fails changelog:check: the 2026.11.20 section date no longer matches the release tag date"
+description: "The deep tier fails the changelog gate because the committed 2026.11.20 section is dated 2026-11-20 while the release tag v2026.11.20 was recreated on 2026-11-21 by the second release PR. Regenerate and commit the changelog so the gate passes again. Deterministic: reproduces on any host at the current commit."
+type: Issue
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-11-23T15:15:03.406Z"
+updated_at: "2026-11-23T15:15:57.474Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+comments[2]{created_at,author,text}:
+  "2026-11-23T15:15:12.310Z",codex-agent,"Classification (scheduled-failure triage 2026-11-23, deep run 45009979278): class 1 - a real, host-independent gate failure. First real failure: deep (22)/(26) jobs failed 'Full npm release gate' at changelog:check, 'Changelog is out of date ... Drift classification: tracker_changed' with the 2026.11.20 section dated 2026-11-20 committed vs 2026-11-21 generated. Root cause: the v2026.11.20 tag was recreated one day later by the second release PR, so the tag-derived section date moved. Reproduced locally on the current main commit (npm run changelog:check exits 1). Fix: commit the regenerated changelog. Revert proof: with the CHANGELOG.md regeneration reverted, changelog:check exits 1 again (the gate is the regression test)."
+  "2026-11-23T15:15:57.474Z",codex-agent,"Revert proof: with the regenerated CHANGELOG.md restored to the committed version, npm run changelog:check exits 1 (assertion 'Changelog is out of date ... 2026.11.20 - 2026-11-20 vs 2026-11-21'); with the fix it exits 0. Gates: typecheck pass, lint pass, identity:check 0 violations, changelog:check pass."
+files[2]{path,scope}:
+  .agents/pm/issues/pm-http-tcwp.toon,project
+  CHANGELOG.md,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "npm run changelog:check",project,codex-agent,"2026-11-23T15:15:16.243Z",local_mutation,deep-1123
+docs[1]{path,scope}:
+  CHANGELOG.md,project
+body: ""
