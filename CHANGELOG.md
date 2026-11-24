@@ -12,6 +12,7 @@
 
 ### Dependencies
 
+- Bump the pm-toolchain group with 3 updates
 - Bump the pm-toolchain group with 3 updates ([#54](https://github.com/unbraind/pm-http/pull/54))
 
 ## 2026.11.20 - 2026-11-21
