@@ -6,6 +6,14 @@
 
 - Deep CI fails changelog:check: the 2026.11.20 section date no longer matches the release tag date ([pm-http-tcwp](https://github.com/unbraind/pm-http/blob/main/.agents/pm/issues/pm-http-tcwp.toon))
 
+### Other
+
+- Keep published dependency updates in the generated changelog ([pm-http-9l2n](https://github.com/unbraind/pm-http/blob/main/.agents/pm/chores/pm-http-9l2n.toon))
+
+### Dependencies
+
+- Bump the pm-toolchain group with 3 updates ([#54](https://github.com/unbraind/pm-http/pull/54))
+
 ## 2026.11.20 - 2026-11-21
 
 ### Dependencies
@@ -40,3 +48,32 @@
 ### Closed
 
 - Closed: Expose exact packet byte costs and distinguish heuristic units from tokenizer counts ([pm-http-github-3c83aae34e57-5](https://github.com/unbraind/pm-http/blob/main/.agents/pm/issues/pm-http-github-3c83aae34e57-5.toon))
+
+### Dependencies
+
+- Bump the pm-toolchain group with 2 updates ([#43](https://github.com/unbraind/pm-http/pull/43))
+- Bump eslint ([#42](https://github.com/unbraind/pm-http/pull/42))
+- Bump @unbrained/pm-cli ([#41](https://github.com/unbraind/pm-http/pull/41))
+- Bump pm-changelog ([#39](https://github.com/unbraind/pm-http/pull/39))
+- Bump the pm-toolchain group with 2 updates ([#36](https://github.com/unbraind/pm-http/pull/36))
+- Bump the dependencies group with 2 updates ([#37](https://github.com/unbraind/pm-http/pull/37))
+- Bump the codeql-action group across 1 directory with 2 updates ([#27](https://github.com/unbraind/pm-http/pull/27))
+- Bump @unbrained/pm-cli ([#29](https://github.com/unbraind/pm-http/pull/29))
+- Bump @unbrained/pm-cli ([#25](https://github.com/unbraind/pm-http/pull/25))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#28](https://github.com/unbraind/pm-http/pull/28))
+- Bump jscpd ([#26](https://github.com/unbraind/pm-http/pull/26))
+- Bump the pm-toolchain group with 2 updates ([#24](https://github.com/unbraind/pm-http/pull/24))
+- Bump the pm-toolchain group with 3 updates ([#23](https://github.com/unbraind/pm-http/pull/23))
+- Bump the pm-toolchain group with 2 updates ([#20](https://github.com/unbraind/pm-http/pull/20))
+- Bump the codeql-action group across 1 directory with 2 updates ([#2](https://github.com/unbraind/pm-http/pull/2))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#19](https://github.com/unbraind/pm-http/pull/19))
+- Bump @unbrained/pm-cli ([#17](https://github.com/unbraind/pm-http/pull/17))
+- Bump @babel/parser ([#18](https://github.com/unbraind/pm-http/pull/18))
+- Bump @unbrained/pm-cli ([#16](https://github.com/unbraind/pm-http/pull/16))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#15](https://github.com/unbraind/pm-http/pull/15))
+- Bump eslint ([#14](https://github.com/unbraind/pm-http/pull/14))
+- Bump the pm-toolchain group across 1 directory with 2 updates ([#9](https://github.com/unbraind/pm-http/pull/9))
+- Bump the dependencies group with 2 updates ([#10](https://github.com/unbraind/pm-http/pull/10))
+- Bump the pm-toolchain group with 2 updates ([#6](https://github.com/unbraind/pm-http/pull/6))
+- Bump the pm-toolchain group across 1 directory with 2 updates ([#3](https://github.com/unbraind/pm-http/pull/3))
+- Bump jscpd ([#4](https://github.com/unbraind/pm-http/pull/4))
