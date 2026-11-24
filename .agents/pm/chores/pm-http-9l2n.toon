@@ -1,0 +1,20 @@
+id: pm-http-9l2n
+title: Keep published dependency updates in the generated changelog
+description: "Regenerating the changelog without --dependency-updates drops Dependabot bullets from release windows that already have tracked items. Every package changelog entry point must pass the flag so generation, checks and release notes keep those published notes."
+type: Chore
+status: in_progress
+priority: 2
+tags[2]: changelog,release-hygiene
+created_at: "2026-11-24T00:27:10.505Z"
+updated_at: "2026-11-24T00:28:34.014Z"
+author: codex-agent
+acceptance_criteria: "changelog, changelog:full, changelog:check, release:notes and changelog:automation keep --dependency-updates; A regression fails when any changelog entry point drops the flag; changelog:check passes after regeneration with fetched tags"
+comments[1]{created_at,author,text}:
+  "2026-11-24T00:28:24.986Z",codex-agent,"With fetched tags, the unflagged generator keeps the two published itemless dependency bullets and omits 27 dependency bullets from release windows that already have tracked items. Passing --dependency-updates restores all 27 (published dependency PRs 2, 3, 4, 6, 9, 10, 14, 15, 16, 17, 18, 19, 20, 23, 24, 25, 26, 27, 28, 29, 36, 37, 39, 41, 42, 43, 54). Removing only the flag from the package scripts fails the changelog entry-point regression. Restoring the flag makes that test pass, 1/1. Typecheck, lint and the identity gate passed. Focused Node tests passed 10/10."
+files[3]{path,scope}:
+  CHANGELOG.md,project
+  package.json,project
+  test/release-workflow.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "node --test --test-concurrency=2 --test-name-pattern=\"package changelog entry points retain dependency updates\" test/release-workflow.test.ts",project,codex-agent,"2026-11-24T00:28:21.451Z",local_mutation,fix/changelog-keep-dependency-updates
+body: ""

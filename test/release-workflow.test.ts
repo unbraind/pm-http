@@ -55,6 +55,21 @@ test('generation, checking and notes explicitly allow empty release sections bef
   for (const name of ['changelog:full', 'changelog:check', 'release:notes']) assert.ok(Object.hasOwn(manifest.scripts, name));
 });
 
+test('package changelog entry points retain dependency updates', () => {
+  const manifest = JSON.parse(readFileSync('package.json', 'utf8')) as { scripts: Record<string, string> };
+  for (const name of ['changelog', 'changelog:full', 'changelog:check', 'release:notes', 'changelog:automation']) {
+    const command = manifest.scripts[name] ?? '';
+    const delegated = /^npm run (\S+)/u.exec(command)?.[1];
+    const optedIn = command.split(/\s+/u).includes('--dependency-updates')
+      || (delegated !== undefined && (manifest.scripts[delegated]?.split(/\s+/u).includes('--dependency-updates') ?? false));
+    assert.equal(optedIn, true, name);
+  }
+  for (const [name, command] of Object.entries(manifest.scripts)) {
+    if (!/(?:^|[\s;|&])(?:pm-changelog|node\s+scripts\/pm-changelog\.ts)(?:\s|$)/u.test(command)) continue;
+    assert.equal(command.split(/\s+/u).includes('--dependency-updates'), true, name);
+  }
+});
+
 test('package-owned approval and preparation inputs are preserved', () => {
   assert.deepEqual(caller.jobs.release.with, {
   "reconcile-only": "${{ (github.event_name == 'schedule' && github.event.schedule == '41 * * * *') || inputs.retire-unpublished == true }}",
