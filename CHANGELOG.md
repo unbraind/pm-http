@@ -12,7 +12,7 @@
 
 ### Dependencies
 
-- Bump @babel/parser
+- Bump @babel/parser from 8.1.2 to 8.1.3 in the dependencies group ([#58](https://github.com/unbraind/pm-http/pull/58))
 - Bump the pm-toolchain group with 3 updates ([#54](https://github.com/unbraind/pm-http/pull/54))
 
 ## 2026.11.20 - 2026-11-21
